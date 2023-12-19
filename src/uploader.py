@@ -1,6 +1,8 @@
 import os
+import sys
 import random
 import time
+import logging
 from http import client
 import httplib2
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -8,6 +10,27 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload
 from dotenv import load_dotenv
+
+# Configure logging
+# Create logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+# Get paths
+scriptdir = os.path.dirname(os.path.abspath(__file__))
+mypath = os.path.join(scriptdir, 'log', 'Reddit2Tube.log')
+# Create file handler which logs even DEBUG messages
+fh = logging.FileHandler(mypath)
+fh.setLevel(logging.DEBUG)
+# Create console handler
+ch = logging.StreamHandler(sys.stdout)
+ch.setLevel(logging.DEBUG)
+# create formatter and add it to the handlers
+formatter = logging.Formatter('[%(levelname)s. %(name)s, (line #%(lineno)d) - %(asctime)s] %(message)s')
+fh.setFormatter(formatter)
+ch.setFormatter(formatter)
+# add handlers to logger
+logger.addHandler(fh)
+logger.addHandler(ch)
 
 # Load environment variables from the .env file
 load_dotenv()
@@ -87,11 +110,11 @@ def resumable_upload(request):
     retry = 0
     while response is None:
         try:
-            print('Uploading file...')
+            logger.info('Uploading file (please wait)...')
             status, response = request.next_chunk()
             if response is not None:
                 if 'id' in response:
-                    print(f'Video id {response.get("id")} was successfully uploaded')
+                    logger.info(f'Video id {response.get("id")} was successfully uploaded')
                 else:
                     exit(f'The upload failed with an unexpected response: {response}')
         except HttpError as e:
@@ -102,11 +125,11 @@ def resumable_upload(request):
         except RETRY_EXCEPTIONS as e:
             error = f'A error occurred: {e}'
         if error is not None:
-            print(error)
+            logger.error(error)
             retry += 1
             if retry > MAX_RETRIES:
                 exit('No longer attempting to retry.')
             max_sleep = 2 ** retry
             sleep_seconds = random.random() * max_sleep
-            print(f'Sleeping {sleep_seconds} seconds and then retrying...')
+            logger.info(f'Sleeping {sleep_seconds} seconds and then retrying...')
             time.sleep(sleep_seconds)
