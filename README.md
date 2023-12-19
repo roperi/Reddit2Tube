@@ -48,8 +48,9 @@ In general this is how it is done:
 
 The client ID and its secret should be inside the config folder and named as `client_secret.json`. 
 
+Example of copying the OAuth 2.0 client credentials to the config folder:
+
 ```commandline
-# Example of copying the OAuth 2.0 client credentials to the config folder
 mkdir config/
 cp client_secret_1234556-3oiuoer3p939rsaqp.apps.googleusercontent.com.json ~/Reddit2Tube/config/client_secret.json
 ```
@@ -182,6 +183,8 @@ optional arguments:
   --category CATEGORY   YouTube video category
   --privacy_status PRIVACY_STATUS
                         YouTube video privacy status (e.g., "private", "public")
+  --made_for_kids       Set if the video is made for kids
+
 ```
 
 Example: Upload to YouTube the top video of the day from r/Cats.
@@ -191,8 +194,10 @@ python Reddit2Tube.py \
   --subreddit_name "cats" \
   --reddit_num_submissions 1 \
   --time_filter "day" \
-  --privacy_status "private"
+  --privacy_status "private" \
+  --made_for_kids
 ```
+Add the flag `--made_for_kids` if you want to make the video kid friendly. Otherwise, don't set this flag.
 
 Output:
 ```commandline
