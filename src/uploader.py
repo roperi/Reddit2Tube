@@ -18,7 +18,7 @@ logger.setLevel(logging.DEBUG)
 # Get the root directory of the project
 scriptdir = os.path.dirname(os.path.abspath(__file__))
 rootdir = os.path.dirname(scriptdir)
-mypath = os.path.join(rootdir, 'Reddit2Tube.log')
+mypath = os.path.join(rootdir, 'log', 'Reddit2Tube.log')
 # Create file handler which logs even DEBUG messages
 fh = logging.FileHandler(mypath)
 fh.setLevel(logging.DEBUG)
