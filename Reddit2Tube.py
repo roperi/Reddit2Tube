@@ -66,7 +66,7 @@ reddit_username = os.environ.get('REDDIT_USERNAME')
 reddit_password = os.environ.get('REDDIT_PASSWORD')
 
 
-def main(subreddit_name, reddit_num_submissions, time_filter, category, privacy_status):
+def main(subreddit_name, reddit_num_submissions, time_filter, category, privacy_status, made_for_kids):
     try:
         # Authenticate with Reddit
         logger.info('Authenticating with Reddit')
@@ -114,7 +114,7 @@ def main(subreddit_name, reddit_num_submissions, time_filter, category, privacy_
 
                 # Upload the video to YouTube
                 logging.info(f"Uploading '{video.title}' to Youtube.")
-                initialize_upload(youtube_instance, options, privacy_status)
+                initialize_upload(youtube_instance, options, privacy_status, made_for_kids)
                 logging.info(f"Video '{video.title}' uploaded successfully")
 
                 # Mark the video as uploaded in the database
@@ -122,7 +122,7 @@ def main(subreddit_name, reddit_num_submissions, time_filter, category, privacy_
                 mark_video_as_uploaded(video.title)
             else:
                 logger.error(f"Video '{video.title}' was already uploaded")
-    
+
     except Exception as e:
         logger.error(f"An error occurred: {str(e)}")
 
@@ -138,6 +138,7 @@ if __name__ == "__main__":
     parser.add_argument('--category', type=str, default='22', help='YouTube video category')
     parser.add_argument('--privacy_status', type=str, default='private',
                         help='YouTube video privacy status (e.g., "private", "public")')
+    parser.add_argument('--made_for_kids', action='store_true', help='Set if the video is made for kids')
 
     args = parser.parse_args()
 
@@ -145,4 +146,7 @@ if __name__ == "__main__":
         parser.print_help()
     else:
         # Call the main function with provided command-line arguments
-        main(args.subreddit_name, args.reddit_num_submissions, args.time_filter, args.category, args.privacy_status)
+        main(
+            args.subreddit_name, args.reddit_num_submissions, args.time_filter, args.category, args.privacy_status,
+            args.made_for_kids
+        )
