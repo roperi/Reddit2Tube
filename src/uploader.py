@@ -15,9 +15,10 @@ from dotenv import load_dotenv
 # Create logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-# Get paths
+# Get the root directory of the project
 scriptdir = os.path.dirname(os.path.abspath(__file__))
-mypath = os.path.join(scriptdir, 'log', 'Reddit2Tube.log')
+rootdir = os.path.dirname(scriptdir)
+mypath = os.path.join(rootdir, 'Reddit2Tube.log')
 # Create file handler which logs even DEBUG messages
 fh = logging.FileHandler(mypath)
 fh.setLevel(logging.DEBUG)
@@ -74,7 +75,7 @@ def get_authenticated_service():
     return build(api_service_name, api_version, credentials=credentials)
 
 
-def initialize_upload(youtube, options, privacy_status):
+def initialize_upload(youtube, options, privacy_status, made_for_kids):
     # Extract keywords from the options
     tags = None
     if options.get('keywords'):
@@ -89,7 +90,7 @@ def initialize_upload(youtube, options, privacy_status):
         },
         'status': {
             'privacyStatus': privacy_status,
-            'selfDeclaredMadeForKids': False,
+            'selfDeclaredMadeForKids': made_for_kids,
         },
     }
     # Create a MediaFileUpload object for the video file
