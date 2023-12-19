@@ -9,7 +9,7 @@ def generate_updated_info(submission, title_template, description_template):
     submission_info = {
         'title': submission.title,
         'id': submission.id,
-        'author': submission.name.author,
+        'author': submission.author.name,
         'selftext': submission.selftext,
         'url': submission.url,
         'score': submission.score,
