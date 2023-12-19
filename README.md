@@ -229,6 +229,27 @@ Uploading file...
 Video id HN2Nv_5wJA was successfully uploaded
 ```
 
+### ModuleNotFoundError
+If you get any of these errors:
+
+```commandline
+ModuleNotFoundError: No module named 'google.appengine'
+or 
+ModuleNotFoundError: No module named 'oauth2client'
+or 
+ImportError: file_cache is unavailable when using oauth2client >= 4.0.0 or google-auth
+
+```
+Reddit2Tube should still be able to upload to YouTube without any issues. These error messages are probably caused by the combined use of the following packages:
+```commandline
+google-auth-httplib2==0.1.0
+google-api-python-client==1.7.8
+httplib2==0.15.0
+google-auth==1.12.0
+```         
+Finding the right combination to make YouTube uploads via the API is hard as you can see [here](https://stackoverflow.com/questions/59815620/gcloud-upload-httplib2-redirectmissinglocation-redirected-but-the-response-is-m).
+
+
 ---
 
 
