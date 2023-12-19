@@ -39,16 +39,28 @@ In general this is how it is done:
 4. In `Credentials`:
    - Create an API Key 
    - Create OAuth 2.O client ID  to get client ID and its secret. 
-     - Download the credentials as `client_secret.json` and put it in `config` folder
+     - Download the credentials as `client_secret.json`.
      - Use **Desktop client** to authenticate in your browser.
 4. In `OAuth consent screen`:
    - Add Test user
    - Select 'External' in User type 
 
+
+The client ID and its secret should be inside the config folder and named as `client_secret.json`. 
+
+```commandline
+# Example of copying the OAuth 2.0 client credentials to the config folder
+mkdir config/
+cp ~/Downloads/secret.json ~/Reddit2Tube/config/client_secret.json
+```
+
+
 **Important**
 * You will have a quota limit of 10,000 queries a day (this is equivalent to uploading no more than 6 videos at a cost of 1600 queries per video)
 * YouTube will put all your uploaded videos in "Private view / marked as spam" even if you publish them in Public mode. This is to done to apps it doesn't trust yet. Therefore... 
 * You'll have to ask for an app audit and verify your app to publish them in public mode, and/or increase your quota limits.
+
+
 
 
 ### Install
@@ -143,6 +155,14 @@ Submission attributes that can be used in both templates:
 'link_flair_text': submission.link_flair_text,
 'locked': submission.locked,
 ```
+### Logging
+Downloads and uploads are logged in a file inside the `log` folder. 
+
+Create log folder
+```
+mkdir log/
+```
+
 
 ### Usage
 
@@ -172,9 +192,7 @@ python Reddit2Tube.py \
   --reddit_num_submissions 3 \
   --time_filter "week" \
   --privacy_status "private"
-
 ```
-
 
 ---
 
