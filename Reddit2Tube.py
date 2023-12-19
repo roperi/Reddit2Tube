@@ -122,7 +122,7 @@ def main(subreddit_name, reddit_num_submissions, time_filter, category, privacy_
                 mark_video_as_uploaded(video.title)
             else:
                 logger.error(f"Video '{video.title}' was already uploaded")
-
+    
     except Exception as e:
         logger.error(f"An error occurred: {str(e)}")
 
