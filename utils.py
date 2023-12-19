@@ -6,7 +6,6 @@ def read_templates(file_path):
 
 
 def generate_updated_info(submission, title_template, description_template):
-    # Create a dictionary of submission attributes
     submission_info = {
         'title': submission.title,
         'id': submission.id,
