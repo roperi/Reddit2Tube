@@ -51,7 +51,7 @@ The client ID and its secret should be inside the config folder and named as `cl
 ```commandline
 # Example of copying the OAuth 2.0 client credentials to the config folder
 mkdir config/
-cp ~/Downloads/secret.json ~/Reddit2Tube/config/client_secret.json
+cp client_secret_1234556-3oiuoer3p939rsaqp.apps.googleusercontent.com.json ~/Reddit2Tube/config/client_secret.json
 ```
 
 
