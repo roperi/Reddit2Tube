@@ -184,14 +184,44 @@ optional arguments:
                         YouTube video privacy status (e.g., "private", "public")
 ```
 
-Example: Upload to YouTube the top 3 videos of the week from r/Cats.
+Example: Upload to YouTube the top video of the day from r/Cats.
 
 ```commandline
 python Reddit2Tube.py \
   --subreddit_name "cats" \
-  --reddit_num_submissions 3 \
-  --time_filter "week" \
+  --reddit_num_submissions 1 \
+  --time_filter "day" \
   --privacy_status "private"
+```
+
+Output:
+```commandline
+[INFO. __main__, (line #72) - 2023-11-19 19:51:14,480] Authenticating with Reddit
+[INFO. __main__, (line #102) - 2023-11-19 19:51:16,146] Downloading `Cat falls from sofa baby laughs` from `https://v.redd.it/t5dads5c77c1`
+[generic] Extracting URL: https://v.redd.it/t5pdadsabo365c77c1
+[generic] t5pbo365c77c1: Downloading webpage
+[redirect] Following redirect to https://www.reddit.com/r/cats/comments/18law16c/cat_falls_sofa/?rdt=34051
+[Reddit] Extracting URL: https://www.reddit.com/r/cats/comments/18law16c/cat_falls_sofa/?rdt=34051
+[Reddit] 18law16c: Downloading JSON metadata
+[Reddit] 18law16c: Downloading m3u8 information
+[Reddit] 18law16c: Downloading MPD manifest
+[info] t5pbo365c77c1: Downloading 1 format(s): fallback+dash-8
+[download] Destination: /tmp/Cat falls from sofa baby laughs.ffallback.mp4
+[download] 100% of   45.26MiB in 00:00:37 at 1.22MiB/s
+[download] Destination: /tmp/Cat falls from sofa baby laughs.fdash-8.m4a
+[download] 100% of    1.25MiB in 00:00:00 at 1.28MiB/s
+[Merger] Merging formats into "/tmp/Cat falls from sofa baby laughs.mp4"
+Deleting original file /tmp/Cat falls from sofa baby laughs.fdash-8.m4a (pass -k to keep)
+Deleting original file /tmp/Cat falls from sofa baby laughs.ffallback.mp4 (pass -k to keep)
+[INFO. __main__, (line #112) - 2023-11-19 19:52:07,891] Authenticating with Youtube
+Please visit this URL to authorize this application: https://accounts.google.com/o/oauth2/auth?response_type=code&client_id=1233454734-q1g9rahdshadioaud82vbp76mumtl.apps.googleusercontent.com&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2F&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fyoutube.upload&state=ud8a7jAHdaMnAsjdas9jdsaASD23&access_type=offline
+Uploading file...
+Uploading file...
+Uploading file...
+Uploading file...
+Uploading file...
+Uploading file...
+Video id HN2Nv_5wJA was successfully uploaded
 ```
 
 ---
