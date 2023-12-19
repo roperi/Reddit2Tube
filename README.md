@@ -98,31 +98,50 @@ API_SERVICE_NAME='youtube'
 API_VERSION='v3'
 
 # Run enviornment
-RUN_ENV
+RUN_ENV='development'
 ```
 
 ### Database
-Create database to track already uploaded videos. 
+Create database to keep track of the videos uploaded to YouTube (so it won't be uploaded again). 
+
+In command-line:
 
 ```commandline
-# In command-line:
-
 sqlite3 db.sqlite3 'CREATE TABLE IF NOT EXISTS uploaded_videos (id INTEGER PRIMARY KEY AUTOINCREMENT, video_id TEXT UNIQUE, upload_datetime DATETIME DEFAULT CURRENT_TIMESTAMP);'
-
 ```
 
 ### Customising YouTube Tiles and Descriptions with Templates
 
 With the ability to define title and description variables based on the attributes of the `praw` submission object, users can ensure that their YouTube uploads are personalized and informative, enhancing their content creation and sharing experience.
 
-Example of `templates/title.txt`
+Create a `templates` folder and put your title and description templates in there. 
+```commandline
+mkdir templates/
+touch templates/title.txt
+touch templats/description.txt
+```
+Content example of `templates/title.txt`
 ```commandline
 "{title}" by {author}
-
 ```
- Example of templates/description.txt
+ Content example of templates/description.txt
 ```commandline
 This video was posted by {author}.
+```
+Submission attributes that can be used in both templates:
+```commandline
+'title': submission.title,
+'id': submission.id,
+'author': submission.name.author,
+'selftext': submission.selftext,
+'url': submission.url,
+'score': submission.score,
+'num_comments': submission.num_comments,
+'created_utc': submission.created_utc,
+'subreddit': submission.subreddit,
+'is_self': submission.is_self,
+'link_flair_text': submission.link_flair_text,
+'locked': submission.locked,
 ```
 
 ### Usage
@@ -155,9 +174,6 @@ python Reddit2Tube.py \
   --privacy_status "private"
 
 ```
-
-### TO-DO
-- Create a module to clean downloaded titles
 
 
 ---
