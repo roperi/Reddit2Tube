@@ -91,7 +91,6 @@ def main(subreddit_name, reddit_num_submissions, time_filter, category, privacy_
 
         for video in top_videos:
             # Download video
-            logger.info(f'Downloading {video.title}')
             video_url = video.url
             video_id = video_url.split('/')[-1]
             video_title, video_description = generate_updated_info(video, title_template, description_template)
