@@ -120,7 +120,7 @@ def main(subreddit_name, reddit_num_submissions, time_filter, category, privacy_
                 logging.info(f"Marking '{video.title}' as uploaded in database")
                 mark_video_as_uploaded(video.id)
             else:
-                logger.error(f"Video '{video.title}' was already uploaded")
+                logger.warning(f"Video '{video.title}' was already uploaded")
 
     except Exception as e:
         logger.error(f"An error occurred: {str(e)}")
