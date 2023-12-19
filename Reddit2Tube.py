@@ -92,11 +92,10 @@ def main(subreddit_name, reddit_num_submissions, time_filter, category, privacy_
         for video in top_videos:
             # Download video
             video_url = video.url
-            video_id = video_url.split('/')[-1]
             video_title, video_description = generate_updated_info(video, title_template, description_template)
 
             # Check if the video is already uploaded
-            uploaded = is_video_uploaded(video_id)
+            uploaded = is_video_uploaded(video.id)
 
             if not uploaded:
                 logger.info(f'Downloading `{video.title}` from `{video.url}`')
@@ -119,7 +118,7 @@ def main(subreddit_name, reddit_num_submissions, time_filter, category, privacy_
 
                 # Mark the video as uploaded in the database
                 logging.info(f"Marking '{video.title}' as uploaded in database")
-                mark_video_as_uploaded(video.title)
+                mark_video_as_uploaded(video.id)
             else:
                 logger.error(f"Video '{video.title}' was already uploaded")
 
