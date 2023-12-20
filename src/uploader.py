@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import os
 import sys
 import random
@@ -5,6 +6,7 @@ import time
 import logging
 from http import client
 import httplib2
+import argparse
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
@@ -150,3 +152,41 @@ def resumable_upload(request, video_title):
             sleep_seconds = random.random() * max_sleep
             logger.info(f'Sleeping {sleep_seconds} seconds and then retrying...')
             time.sleep(sleep_seconds)
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='YouTube Video Uploader')
+    parser.add_argument('--title', required=True, help='Title of the video')
+    parser.add_argument('--description', required=True, help='Description of the video')
+    parser.add_argument('--keywords', help='Keywords for the video (comma-separated)')
+    parser.add_argument('--category', default='22', help='Category ID for the video')
+    parser.add_argument('--file', required=True, help='Path to the video file')
+    parser.add_argument('--privacy', choices=['public', 'private', 'unlisted'], default='private',
+                        help='Privacy status of the video (public, private, or unlisted)')
+    parser.add_argument('--made-for-kids', action='store_true', help='Set if the video is made for kids')
+
+    return parser.parse_args()
+
+
+if __name__ == "__main__":
+    # Parse command line arguments
+    args = parse_args()
+
+    # Define video upload options based on command line arguments
+    options = {
+        'title': args.title,
+        'description': args.description,
+        'keywords': args.keywords,
+        'category': args.category,
+        'file': args.file,
+    }
+
+    # Set privacy status and made for kids flag
+    privacy_status = args.privacy
+    made_for_kids = args.made_for_kids
+
+    # Get authenticated YouTube service
+    youtube_service = get_authenticated_service()
+
+    # Initialize and perform video upload
+    initialize_upload(youtube_service, options, privacy_status, made_for_kids)
