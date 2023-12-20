@@ -118,7 +118,7 @@ def main(subreddit_name, reddit_num_submissions, time_filter, category, privacy_
 
                 # Mark the video as uploaded in the database
                 logging.info(f"Marking '{video.title}' as uploaded in database")
-                mark_video_as_uploaded(video.id)
+                mark_video_as_uploaded(video.id, video.title)
             else:
                 logger.warning(f"Video '{video.title}' was already uploaded")
 
