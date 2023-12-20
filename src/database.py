@@ -8,15 +8,15 @@ load_dotenv()
 database_file = os.environ.get('DATABASE_FILE')
 
 
-def mark_video_as_uploaded(video_id):
+def mark_video_as_uploaded(video_id, title):
     # Function to mark a video as uploaded in the database
     with sqlite3.connect(database_file) as conn:
         cursor = conn.cursor()
         cursor.execute('''
-            INSERT INTO uploaded_videos (video_id, upload_datetime)
-            VALUES (?, CURRENT_TIMESTAMP)
+            INSERT INTO uploaded_videos (video_id, title, upload_datetime)
+            VALUES (?, ?, CURRENT_TIMESTAMP)
             ON CONFLICT(video_id) DO NOTHING
-        ''', (video_id,))
+        ''', (video_id, title))
         conn.commit()
 
 
