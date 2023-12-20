@@ -12,8 +12,10 @@
 ### Requirements
 
 - Python +3.8
+- Google account
 - Access to YouTube Data API v3
-- Reddit app
+- Verify your app with Google (optional)
+- Reddit app credentials
 
 ## Getting your Reddit app credentials
 
