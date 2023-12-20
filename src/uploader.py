@@ -7,8 +7,11 @@ from http import client
 import httplib2
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+from google.oauth2.credentials import Credentials
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload
+from google.auth.transport.requests import Request
+
 from dotenv import load_dotenv
 
 # Configure logging
@@ -66,13 +69,26 @@ RETRY_STATUS_CODES = [500, 502, 503, 504]
 
 # Authorize the request and store authorization credentials.
 def get_authenticated_service():
-    flow = InstalledAppFlow.from_client_secrets_file(
-        client_secrets_file, scopes)
-    if run_env == 'development':
-        credentials = flow.run_local_server()
-    else:
-        credentials = flow.run_console()
-    return build(api_service_name, api_version, credentials=credentials)
+    creds = None
+    # The file token.json stores the user's access and refresh tokens, and is
+    # created automatically when the authorization flow completes for the first
+    # time.
+    if os.path.exists("config/token.json"):
+        creds = Credentials.from_authorized_user_file("config/token.json", scopes)
+    # If there are no (valid) credentials available, let the user log in.
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                client_secrets_file, scopes
+            )
+            creds = flow.run_local_server(port=0)
+        # Save the credentials for the next run
+        with open("config/token.json", "w") as token:
+            token.write(creds.to_json())
+
+    return build(api_service_name, api_version, credentials=creds)
 
 
 def initialize_upload(youtube, options, privacy_status, made_for_kids):
@@ -102,16 +118,16 @@ def initialize_upload(youtube, options, privacy_status, made_for_kids):
         media_body=media_body
     )
     # Perform the resumable upload
-    resumable_upload(insert_request)
+    resumable_upload(insert_request, options.get('title'))
 
 
-def resumable_upload(request):
+def resumable_upload(request, video_title):
     response = None
     error = None
     retry = 0
     while response is None:
         try:
-            logger.info('Uploading file (please wait)...')
+            logger.info(f'Uploading `{video_title}` in chunks (please wait)...')
             status, response = request.next_chunk()
             if response is not None:
                 if 'id' in response:
