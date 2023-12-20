@@ -96,7 +96,8 @@ touch .env
 ```
 Add the following to .env file:
 ```
-# .env
+# Database
+DATABASE_FILE='db.sqlite3'
 
 # Reddit
 REDDIT_CLIENT_ID="YOUR-REDDIT-CLIENT-ID"
@@ -105,13 +106,11 @@ REDDIT_USERNAME="YOUR-REDDIT_USERNAME"
 REDDIT_PASSWORD="YOUR-REDDIT_PASSWORD"
 REDDIT_USER_AGENT="User-Agent: Reddit2Tube/1.0 by YOUR-REDDIT-USERNAME"
 
-# Youtube
+# YouTube API V3
+CLIENT_SECRETS_FILE='config/client_secret.json'
 SCOPES='YOUR-COMMA-SEPARATED-LIST-OF-SCOPES"
 API_SERVICE_NAME='youtube'
 API_VERSION='v3'
-
-# Run enviornment
-RUN_ENV='development'
 ```
 
 ### Database
@@ -120,7 +119,7 @@ Create database to keep track of the videos uploaded to YouTube (so it won't be 
 In command-line:
 
 ```commandline
-sqlite3 db.sqlite3 'CREATE TABLE IF NOT EXISTS uploaded_videos (id INTEGER PRIMARY KEY AUTOINCREMENT, video_id TEXT UNIQUE, upload_datetime DATETIME DEFAULT CURRENT_TIMESTAMP);'
+sqlite3 db.sqlite3 'CREATE TABLE IF NOT EXISTS uploaded_videos (id INTEGER PRIMARY KEY AUTOINCREMENT, video_id TEXT UNIQUE, title TEXT, upload_datetime DATETIME DEFAULT CURRENT_TIMESTAMP);'
 ```
 
 ### Customising YouTube Tiles and Descriptions with Templates
@@ -187,7 +186,7 @@ optional arguments:
 
 ```
 
-Example: Upload to YouTube the top video of the day from r/Cats.
+Example: Upload the top video of the day from r/Cats to your YouTube account.
 
 ```commandline
 python Reddit2Tube.py \
@@ -228,6 +227,18 @@ Uploading file...
 Uploading file...
 Video id HN2Nv_5wJA was successfully uploaded
 ```
+
+### YouTube Authentication & Authorization flow
+
+The first time you run Reddit2Tube, YouTube will ask you to _manually_ authenticate. You must grant permission to Google Accounts to allow your app access. 
+
+The file `config/token.json` stores your user's access and refresh tokens, and is created automatically when the authorization flow completes for the first time. `config/token.json` will be used for the next run.  
+
+**Verify your app with Google**
+
+If your app isn't verified by Google, these tokens will be likely to be revoked almost immediately requiring you to authenticate every time you upload a video to YouTube.
+
+
 
 ### ModuleNotFoundError
 If you get any of these errors:
