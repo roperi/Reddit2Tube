@@ -1,11 +1,11 @@
 import yt_dlp
 
 
-def download_video(video_url):
+def download_video(video_url, video_title):
     """Download a video from the given URL and return video path."""
 
     download_options = {
-        'outtmpl': '/tmp/%(title)s.%(ext)s',
+        'outtmpl': f'/tmp/{video_title}.%(ext)s',
     }
 
     with yt_dlp.YoutubeDL(download_options) as ydl:
