@@ -262,6 +262,7 @@ google-auth==1.12.0
 ```         
 Finding the right combination to make YouTube uploads via the API is hard as you can see [here](https://stackoverflow.com/questions/59815620/gcloud-upload-httplib2-redirectmissinglocation-redirected-but-the-response-is-m).
 
+Tip: One way I found to make the it work was to pip install all the packages in `requirements.txt` except for the `google-api-core` one. Once the rest of the packages are installed, proceed to pip install `google-api-core`.
 
 ---
 
