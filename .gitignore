@@ -111,3 +111,4 @@ atlassian-ide-plugin.xml
 
 # Others
 *.swp
+bin/
