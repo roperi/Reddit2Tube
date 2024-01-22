@@ -66,7 +66,7 @@ reddit_username = os.environ.get('REDDIT_USERNAME')
 reddit_password = os.environ.get('REDDIT_PASSWORD')
 
 
-def main(subreddit_name, reddit_num_submissions, time_filter, category, privacy_status, made_for_kids):
+def main(subreddit_name, reddit_num_submissions, time_filter, category, privacy_status, made_for_kids, just_download):
     try:
         # Authenticate with Reddit
         logger.info('Authenticating with Reddit')
@@ -98,27 +98,29 @@ def main(subreddit_name, reddit_num_submissions, time_filter, category, privacy_
             uploaded = is_video_uploaded(video.id)
 
             if not uploaded:
-                logger.info(f'Downloading `{video.title}` from `{video.url}`')
+                logger.info(f'Downloading `{video.title}` by {video.author.name} from `{video.url}`')
                 # Download the video
-                local_video_path = download_video(video_url)
+                local_video_path = download_video(video_url, video_title)
+                logger.info(f'Downloaded video as `{local_video_path}`')
                 options = {'title': video_title,
                            'description': video_description,
                            'category': category,
                            'file': local_video_path,
                            }
 
-                # Authenticate with YouTube
-                logger.info('Authenticating with Youtube')
-                youtube_instance = get_authenticated_service()
+                if not just_download:
+                    # Authenticate with YouTube
+                    logger.info('Authenticating with Youtube')
+                    youtube_instance = get_authenticated_service()
 
-                # Upload the video to YouTube
-                logging.info(f"Uploading '{video.title}' to Youtube.")
-                initialize_upload(youtube_instance, options, privacy_status, made_for_kids)
-                logging.info(f"Video '{video.title}' uploaded successfully")
+                    # Upload the video to YouTube
+                    logging.info(f"Uploading '{video.title}' to Youtube.")
+                    initialize_upload(youtube_instance, options, privacy_status, made_for_kids)
+                    logging.info(f"Video '{video.title}' uploaded successfully")
 
-                # Mark the video as uploaded in the database
-                logging.info(f"Marking '{video.title}' as uploaded in database")
-                mark_video_as_uploaded(video.id, video.title)
+                    # Mark the video as uploaded in the database
+                    logging.info(f"Marking '{video.title}' as uploaded in database")
+                    mark_video_as_uploaded(video.id, video.title)
             else:
                 logger.warning(f"Video '{video.title}' was already uploaded")
 
@@ -138,7 +140,7 @@ if __name__ == "__main__":
     parser.add_argument('--privacy_status', type=str, default='private',
                         help='YouTube video privacy status (e.g., "private", "public")')
     parser.add_argument('--made_for_kids', action='store_true', help='Set if the video is made for kids')
-
+    parser.add_argument('--just_download', action='store_true', help='Skip YouTube uploading')
     args = parser.parse_args()
 
     if len(sys.argv) == 1:
@@ -147,5 +149,5 @@ if __name__ == "__main__":
         # Call the main function with provided command-line arguments
         main(
             args.subreddit_name, args.reddit_num_submissions, args.time_filter, args.category, args.privacy_status,
-            args.made_for_kids
+            args.made_for_kids, args.just_download
         )
