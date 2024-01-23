@@ -138,7 +138,7 @@ if __name__ == "__main__":
                         help='Time filter for Reddit submissions (e.g., "day", "week")')
     parser.add_argument('--category', type=str, default='22', help='YouTube video category')
     parser.add_argument('--privacy_status', type=str, default='private',
-                        help='YouTube video privacy status (e.g., "private", "public")')
+                        help='YouTube video privacy status (e.g., "private", "public", "unlisted")')
     parser.add_argument('--made_for_kids', action='store_true', help='Set if the video is made for kids')
     parser.add_argument('--just_download', action='store_true', help='Skip YouTube uploading')
     args = parser.parse_args()
