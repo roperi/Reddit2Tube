@@ -12,10 +12,9 @@
 ### Requirements
 
 - Python +3.8
-- Google account
-- Access to YouTube Data API v3
-- Verify your app with Google (optional)
-- Reddit app credentials
+- A YouTube Channel created with either a Google personal account (__NOT Recommended__) or with a Google Workspace or Google Identity account (__Highly Recommended__) 
+- YouTube Data API v3 access 
+- Reddit API access
 
 ## Getting your Reddit app credentials
 
@@ -30,40 +29,51 @@ These instructions assume you have a Reddit account.
 4. Copy your client ID and secret key in a safe place
 
 ## Getting access to YouTube API v3
-If possible, check a guide elsewhere on the details of how to do this. 
 
-In general this is how it is done:
+__Using Reddit2Tube for personal use? Create a YouTube Channel using a Google Workspace (paid) or a Google Identity (free) account__  
+If you are using Reddit2Tube for your own personal use I'd highly recommend you to NOT upload to the YouTube channel 
+created with your personal Google account. Instead, create a new YouTube channel using a Google Workplace (paid) or 
+Google Identity (free) account. 
 
-1. Go to Google Cloud Console > https://console.cloud.google.com/
-2. In `Enabled APIs and services`: 
+__Why can't I use my YouTube channel created with my personal Google account?__   
+You can but YouTube will place all your uploaded videos in locked mode (under review) until your app is verified. 
+Since the app verification process could take weeks and requires some extra effort, it is only worth going through it 
+only if you are planning to create an app that is going to be used by many users. Alternatively if you are using Reddit2Tube for personal 
+use create a YouTube Channel with a Google Workspace or Google Identity account to start uploading videos programmatically right away. 
+
+In general this is how you set up the YouTube API v3:
+
+1. Log to your Google Cloud Console  https://console.cloud.google.com/
+2. Create a project and name it
+3. In `Enabled APIs and services`: 
    - Add YouTube Data API v3
-   - Add scope: `https://www.googleapis.com/auth/youtube.upload`
-4. In `Credentials`:
-   - Create an API Key 
-   - Create OAuth 2.O client ID  to get client ID and its secret. 
-     - Download the credentials as `client_secret.json`.
-     - Use **Desktop client** to authenticate in your browser.
-4. In `OAuth consent screen`:
+4. In `Credentials` click API Key:
+   - Create an API Key (and copy it somewhere as it is going to be used later on) 
+5. Again in `Credentials` click OAuth client ID:
+   - In application type select **Desktop client** to authenticate in your browser.
+   - Click DOWNLOAD JSON to download the credentials and rename file to `client_secret.json`.
+6. In `OAuth consent screen`:
    - Add Test user
-   - Select 'External' in User type 
+     - In User type:
+       - Select 'External' if your app is going to be used by many users (requires app verification)
+       - Select 'Internal' if your app is going to be used only by you (no app verification). Note that you won't be able 
+       to select `Internal` if you created the Google Cloud project with your Google Personal 
+account (you need a Google Workspace or Google identity account in order to select this option).
+   - Add scope: `https://www.googleapis.com/auth/youtube.upload`
 
+__YouTube API v3 OAuth client credentials__
 
-The client ID and its secret should be inside the config folder and named as `client_secret.json`. 
+Create a `config` folder and put the json file containing the Client ID and Client Secret credentials inside it. Name it as `client_secret.json`. 
 
-Example of copying the OAuth 2.0 client credentials to the config folder:
+Example of copying the OAuth client credentials to the config folder:
 
 ```commandline
 mkdir config/
-cp client_secret_1234556-3oiuoer3p939rsaqp.apps.googleusercontent.com.json ~/Reddit2Tube/config/client_secret.json
+cp /tmp/client_secret_1234556-3oiuoer3p939rsaqp.apps.googleusercontent.com.json ~/Reddit2Tube/config/client_secret.json
 ```
 
-
-**Important**
-* You will have a quota limit of 10,000 queries a day (this is equivalent to uploading no more than 6 videos at a cost of 1600 queries per video)
-* YouTube will put all your uploaded videos in "Private view / marked as spam" even if you publish them in Public mode. This is to done to apps it doesn't trust yet. Therefore... 
-* You'll have to ask for an app audit and verify your app to publish them in public mode, and/or increase your quota limits.
-
-
+__Upload limit__  
+You will have a quota limit of 10,000 queries a day (this is equivalent to uploading no more than 6 videos at a cost of 1600 queries per video). You can request a quota increase though.
 
 
 ### Install
@@ -110,7 +120,7 @@ REDDIT_USER_AGENT="User-Agent: Reddit2Tube/1.0 by YOUR-REDDIT-USERNAME"
 
 # YouTube API V3
 CLIENT_SECRETS_FILE='config/client_secret.json'
-SCOPES='YOUR-COMMA-SEPARATED-LIST-OF-SCOPES"
+SCOPES='https://www.googleapis.com/auth/youtube.upload' # list of comma-separated scopes (in this case we are only using one scope)
 API_SERVICE_NAME='youtube'
 API_VERSION='v3'
 ```
@@ -169,7 +179,8 @@ mkdir log/
 ### Usage
 
 ```
-usage: Reddit2Tube.py [-h] [--subreddit_name SUBREDDIT_NAME] [--reddit_num_submissions REDDIT_NUM_SUBMISSIONS] [--time_filter TIME_FILTER] [--category CATEGORY] [--privacy_status PRIVACY_STATUS]
+usage: Reddit2Tube.py [-h] [--subreddit_name SUBREDDIT_NAME] [--reddit_num_submissions REDDIT_NUM_SUBMISSIONS] [--time_filter TIME_FILTER] [--category CATEGORY] [--privacy_status PRIVACY_STATUS] [--made_for_kids]
+                      [--just_download]
 
 Download and upload top Reddit videos to YouTube.
 
@@ -183,12 +194,13 @@ optional arguments:
                         Time filter for Reddit submissions (e.g., "day", "week")
   --category CATEGORY   YouTube video category
   --privacy_status PRIVACY_STATUS
-                        YouTube video privacy status (e.g., "private", "public")
+                        YouTube video privacy status (e.g., "private", "public", "unlisted")
   --made_for_kids       Set if the video is made for kids
-
+  --just_download       Skip YouTube uploading
 ```
 
-Example: Upload the top video of the day from r/Cats to your YouTube account.
+__Usage example__  
+Upload the top video of the day from _r/Cats_ to your YouTube channel.
 
 ```commandline
 python Reddit2Tube.py \
@@ -198,9 +210,11 @@ python Reddit2Tube.py \
   --privacy_status "private" \
   --made_for_kids
 ```
-Add the flag `--made_for_kids` if you want to make the video kid friendly. Otherwise, don't set this flag.
+Add the flag `--made_for_kids` if you want to make the video kid friendly. Otherwise, don't set this flag.  
+To skip the YouTube upload part use the `--just_download` flag.
 
-Output:
+
+__Output example__
 ```commandline
 [INFO. __main__, (line #72) - 2023-11-19 19:51:14,480] Authenticating with Reddit
 [INFO. __main__, (line #102) - 2023-11-19 19:51:16,146] Downloading `Cat falls from sofa baby laughs` from `https://v.redd.it/t5dads5c77c1`
@@ -232,14 +246,9 @@ Video id HN2Nv_5wJA was successfully uploaded
 
 ### YouTube Authentication & Authorization flow
 
-The first time you run Reddit2Tube, YouTube will ask you to _manually_ authenticate. You must grant permission to Google Accounts to allow your app access. 
+The first time you run Reddit2Tube, YouTube will ask you to _manually_ authenticate. You must grant permission to your app to be able to access your YouTube account. 
 
 The file `config/token.json` stores your user's access and refresh tokens, and is created automatically when the authorization flow completes for the first time. `config/token.json` will be used for the next run.  
-
-**Verify your app with Google**
-
-If your app isn't verified by Google, these tokens will be likely to be revoked almost immediately requiring you to authenticate every time you upload a video to YouTube.
-
 
 
 ### ModuleNotFoundError
