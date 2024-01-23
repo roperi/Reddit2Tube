@@ -76,7 +76,13 @@ def get_authenticated_service():
     # created automatically when the authorization flow completes for the first
     # time.
     if os.path.exists("config/token.json"):
-        creds = Credentials.from_authorized_user_file("config/token.json", scopes)
+        try:
+            creds = Credentials.from_authorized_user_file("config/token.json", scopes)
+            creds.refresh(Request())
+        except Exception as error:
+            # if refresh token fails, reset creds to none.
+            creds = None
+            logger.warning(f'Refresh token expired requesting authorization again: {error}')
     # If there are no (valid) credentials available, let the user log in.
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
