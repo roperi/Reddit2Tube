@@ -163,7 +163,7 @@ def parse_args():
     parser.add_argument('--file', required=True, help='Path to the video file')
     parser.add_argument('--privacy', choices=['public', 'private', 'unlisted'], default='private',
                         help='Privacy status of the video (public, private, or unlisted)')
-    parser.add_argument('--made-for-kids', action='store_true', help='Set if the video is made for kids')
+    parser.add_argument('--made_for_kids', action='store_true', help='Set if the video is made for kids')
 
     return parser.parse_args()
 
@@ -173,7 +173,7 @@ if __name__ == "__main__":
     args = parse_args()
 
     # Define video upload options based on command line arguments
-    options = {
+    arg_options = {
         'title': args.title,
         'description': args.description,
         'keywords': args.keywords,
@@ -181,12 +181,8 @@ if __name__ == "__main__":
         'file': args.file,
     }
 
-    # Set privacy status and made for kids flag
-    privacy_status = args.privacy
-    made_for_kids = args.made_for_kids
-
     # Get authenticated YouTube service
     youtube_service = get_authenticated_service()
 
     # Initialize and perform video upload
-    initialize_upload(youtube_service, options, privacy_status, made_for_kids)
+    initialize_upload(youtube_service, arg_options, args.privacy, args.made_for_kids)
