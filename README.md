@@ -21,7 +21,7 @@
 ### Requirements
 
 - Python +3.8
-- A YouTube Channel created with either a Google personal account (__NOT Recommended__) or with a Google Workspace or Google Identity account (__Highly Recommended__) 
+- A YouTube Channel created with either a Google personal account (__NOT Recommended__) or with a Google Workspace or Google Cloud Identity account (__Highly Recommended__) 
 - YouTube Data API v3 access 
 - Reddit API access
 
@@ -41,7 +41,7 @@ These instructions assume you have a Reddit account.
 
 ## Getting access to YouTube API v3
 
-__Using Reddit2Tube for personal use? Create a YouTube Channel using a Google Workspace (paid) or a Google Identity (free) account__  
+__Using Reddit2Tube for personal use? Create a YouTube Channel using a Google Workspace (paid) or a Google Cloud Identity (free) account__  
 If you are using Reddit2Tube for your own personal use I'd highly recommend you to NOT upload to the YouTube channel 
 created with your personal Google account. Instead, create a new YouTube channel using a Google Workplace (paid) or 
 Google Identity (free) account. 
@@ -69,7 +69,7 @@ In general this is how you set up the YouTube API v3:
        - Select 'External' if your app is going to be used by many users (requires app verification)
        - Select 'Internal' if your app is going to be used only by you (no app verification). Note that you won't be able 
        to select `Internal` if you created the Google Cloud project with your Google Personal 
-account (you need a Google Workspace or Google identity account in order to select this option).
+account (you need a Google Workspace or Google Cloud identity account in order to select this option).
    - Add scope: `https://www.googleapis.com/auth/youtube.upload`
 
 __YouTube API v3 OAuth client credentials__
