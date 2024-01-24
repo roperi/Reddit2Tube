@@ -1,9 +1,18 @@
 <h1 align="center">Reddit2Tube</h1>
-<h2 align="center">Download and Upload Top Reddit Videos to Youtube</h2>
+<h2 align="center">Automatically populate your YouTube channel with highly-rated Reddit videos</h2>
 
 ---
 
-## Main libraries used 
+## Features
+
+- Automate the process of downloading popular videos from public subreddits
+- Simplify video uploads to your YouTube channel
+- Streamline the process of creating titles and descriptions for your content using predefined templates
+
+
+---
+
+### Libraries 
 - Praw
 - yt_dlp
 - google-auth et al
@@ -15,6 +24,8 @@
 - A YouTube Channel created with either a Google personal account (__NOT Recommended__) or with a Google Workspace or Google Identity account (__Highly Recommended__) 
 - YouTube Data API v3 access 
 - Reddit API access
+
+---
 
 ## Getting your Reddit app credentials
 
@@ -75,8 +86,9 @@ cp /tmp/client_secret_1234556-3oiuoer3p939rsaqp.apps.googleusercontent.com.json 
 __Upload limit__  
 You will have a quota limit of 10,000 queries a day (this is equivalent to uploading no more than 6 videos at a cost of 1600 queries per video). You can request a quota increase though.
 
+---
 
-### Install
+## Installation
 
 Create virtual environment
 ```
@@ -271,10 +283,97 @@ google-auth==1.12.0
 ```         
 Finding the right combination to make YouTube uploads via the API is hard as you can see [here](https://stackoverflow.com/questions/59815620/gcloud-upload-httplib2-redirectmissinglocation-redirected-but-the-response-is-m).
 
-Tip: One way I found to make the it work was to pip install all the packages in `requirements.txt` except for the `google-api-core` one. Once the rest of the packages are installed, proceed to pip install `google-api-core`.
+Tip: One way I found to make it work was to pip install all the packages in `requirements.txt` except for the `google-api-core` one. Once the rest of the packages are installed, proceed to pip install `google-api-core`.
 
 ---
 
+## Production
+
+Once you are done with local development testing you can start using Reddit2Tube in a production server 
+for total automation.
+
+### Upload your local development files 
+Upload your local .env, database, templates and credentials to the remote server via scp.
+
+__Important__   
+Make sure to run Reddit2Tube in your local development to force the creation of a refresh token so you won't be asked to authenticate in the remote server.
+
+```commandline
+# Assuming you git cloned Reddit2Tube in user's root folder.
+
+mkdir templates/ config/
+scp .env your-user@your-ip-address:"/home/your-user/Reddit2Tube/"
+scp db.sqlite3 your-user@your-ip-address:"/home/your-user/Reddit2Tube/"
+scp templates/* your-user@your-ip-address:"/home/your-user/Reddit2Tube/templates"
+scp config/* your-user@your-ip-address:"/home/your-user/Reddit2Tube/config/"
+```
+
+### Bash script 
+To automate the download/upload workflow you can use a bash script executed as a cron job.
+
+In the project folder create a bin folder and create a Reddit2Tube.sh bash script in it.
+
+It will log its output to `log/Reddit2Tube.log`.
+
+```
+mkdir bin/ log/
+touch bin/Reddit2Tube.sh
+```
+
+Paste the following to `bin/Reddit2Tube.sh`
+
+```
+
+#!/bin/bash
+#
+# Execute `Reddit2Tube.py` module if it is not running.
+#
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+parent="$(dirname "$DIR")"
+
+if pgrep -f "Reddit2Tube.py" &>/dev/null; then
+    :
+else
+    # Activate virtualenv
+    source ~/.virtualenvs/Reddit2Tube/bin/activate
+    # Run
+    nohup ~/.virtualenvs/Reddit2Tube/bin/python $parent/Reddit2Tube.py --subreddit_name "cats" --reddit_num_submissions 3 --time_filter week --privacy_status private > $parent/log/Reddit2Tube.log  2>&1 &
+
+fi
+
+```
+
+Note that the above script uploads the top 3 r/Cats videos of the week to your YouTube channel. Edit the script 
+to suit your use case. 
+
+Make it executable
+```commandline
+chmod +x bin/Reddit2Tube.sh
+```
+
+### Cron job
+
+Create a cron job to execute the above script. 
+
+Type `contab -e` and create a cron job that suits your needs. 
+
+In the following example `Reddit2Tube.sh` will be executed 
+once a week at 5:00am.
+
+```commandline
+0 5 * * 1 $HOME/Reddit2Tube/bin/Reddit2Tube.sh
+```
+
+Save the crontab and exit.
+
+And that's it! The cron job will run once a week and upload the 3 most upvoted videos from r/Cats to your YouTube channel in private mode.
+
+### Keep refreshing your tokens
+
+Don't forget to get a new refresh token by running Reddit2Tube at local level and upload again your `config/token.json` to avoid being asked to authenticate
+in the remote server. It seems refresh tokens last 7 days.
+
+---
 
 ### Copyright and license
 Copyright © 2023 Roperi. MIT License.
