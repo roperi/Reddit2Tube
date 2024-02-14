@@ -262,6 +262,17 @@ The first time you run Reddit2Tube, YouTube will ask you to _manually_ authentic
 
 The file `config/token.json` stores your user's access and refresh tokens, and is created automatically when the authorization flow completes for the first time. `config/token.json` will be used for the next run.  
 
+### ModuleNotFoundError: No module named 'google.appengine'
+If you are getting this warning Reddit2Tube will still upload the video. 
+
+```
+WARNING:googleapiclient.discovery_cache:file_cache is unavailable when using oauth2client >= 4.0.0 or google-auth
+Traceback (most recent call last):
+  File "/home/user/.virtualenvs/Reddit2Tube/lib/python3.8/site-packages/googleapiclient/discovery_cache/__init__.py", line 36, in autodetect
+    from google.appengine.api import memcache
+ModuleNotFoundError: No module named 'google.appengine'
+```
+
 
 ### ModuleNotFoundError
 If you get any of these errors:
