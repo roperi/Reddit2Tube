@@ -7,7 +7,7 @@ def read_templates(file_path):
 
 def generate_updated_info(submission, title_template, description_template):
     submission_info = {
-        'title': submission.title,
+        'title': submission.title[:70] + '...',
         'id': submission.id,
         'author': submission.author.name,
         'selftext': submission.selftext,
