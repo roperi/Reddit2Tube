@@ -1,3 +1,5 @@
+
+
 <h1 align="center">Reddit2Tube</h1>
 <h2 align="center">Automatically populate your YouTube channel with highly-rated Reddit videos</h2>
 
@@ -12,13 +14,13 @@
 
 ---
 
-### Libraries 
+## Libraries 
 - Praw
 - yt_dlp
 - google-auth et al
 - google-api-python-client
 
-### Requirements
+## Requirements
 
 - Python +3.8
 - A YouTube Channel created with either a Google personal account (__NOT Recommended__) or with a Google Workspace or Google Cloud Identity account (__Highly Recommended__) 
@@ -262,39 +264,6 @@ The first time you run Reddit2Tube, YouTube will ask you to _manually_ authentic
 
 The file `config/token.json` stores your user's access and refresh tokens, and is created automatically when the authorization flow completes for the first time. `config/token.json` will be used for the next run.  
 
-### ModuleNotFoundError: No module named 'google.appengine'
-If you are getting this warning Reddit2Tube will still upload the video. 
-
-```
-WARNING:googleapiclient.discovery_cache:file_cache is unavailable when using oauth2client >= 4.0.0 or google-auth
-Traceback (most recent call last):
-  File "/home/user/.virtualenvs/Reddit2Tube/lib/python3.8/site-packages/googleapiclient/discovery_cache/__init__.py", line 36, in autodetect
-    from google.appengine.api import memcache
-ModuleNotFoundError: No module named 'google.appengine'
-```
-
-
-### ModuleNotFoundError
-If you get any of these errors:
-
-```commandline
-ModuleNotFoundError: No module named 'google.appengine'
-or 
-ModuleNotFoundError: No module named 'oauth2client'
-or 
-ImportError: file_cache is unavailable when using oauth2client >= 4.0.0 or google-auth
-
-```
-Reddit2Tube should still be able to upload to YouTube without any issues. These error messages are probably caused by the combined use of the following packages:
-```commandline
-google-auth-httplib2==0.1.0
-google-api-python-client==1.7.8
-httplib2==0.15.0
-google-auth==1.12.0
-```         
-Finding the right combination to make YouTube uploads via the API is hard as you can see [here](https://stackoverflow.com/questions/59815620/gcloud-upload-httplib2-redirectmissinglocation-redirected-but-the-response-is-m).
-
-Tip: One way I found to make it work was to pip install all the packages in `requirements.txt` except for the `google-api-core` one. Once the rest of the packages are installed, proceed to pip install `google-api-core`.
 
 ---
 

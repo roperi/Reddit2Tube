@@ -7,6 +7,7 @@ import logging
 from http import client
 import httplib2
 import argparse
+import warnings
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
@@ -71,6 +72,7 @@ RETRY_STATUS_CODES = [500, 502, 503, 504]
 
 # Authorize the request and store authorization credentials.
 def get_authenticated_service():
+    warnings.filterwarnings('ignore')  # To avoid scary but harmless warnings
     creds = None
     # The file token.json stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
