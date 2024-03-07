@@ -1,4 +1,4 @@
-
+![Reddit2Tube demo video](https://github.com/roperi/Reddit2Tube/assets/9901508/fef0561f-784a-4fdf-8571-45dbffad5800)
 
 <h1 align="center">Reddit2Tube</h1>
 <h2 align="center">Automatically populate your YouTube channel with highly-rated Reddit videos</h2>
