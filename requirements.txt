@@ -29,4 +29,4 @@ uritemplate==3.0.1
 urllib3==2.1.0
 websocket-client==1.7.0
 websockets==12.0
-yt-dlp==
+yt-dlp==2023.12.30
