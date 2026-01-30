@@ -91,7 +91,7 @@ def main(subreddit_name, reddit_num_submissions, time_filter, category, privacy_
 
         for video in top_videos:
             # Download video
-            video_url = video.url
+            video_url = 'https://www.reddit.com' + video.permalink
             video_title, video_description = generate_updated_info(video, title_template, description_template)
 
             # Check if the video is already uploaded
