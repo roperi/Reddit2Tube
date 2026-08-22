@@ -369,4 +369,4 @@ in the remote server. It seems refresh tokens last 7 days.
 ---
 
 ### Copyright and license
-Copyright © 2023 Roperi. MIT License.
+Copyright © 2023-2026 Roperi. MIT License.
