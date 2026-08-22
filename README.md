@@ -111,7 +111,7 @@ git clone https://github.com/roperi/Reddit2Tube.git
 Install dependencies
 ```
 cd Reddit2Tube/
-pip install - requirements.txt
+python -m pip install -r requirements.txt
 ```
 
 ### Configure
@@ -131,6 +131,11 @@ REDDIT_CLIENT_SECRET="YOUR-REDDIT-SECRET"
 REDDIT_USERNAME="YOUR-REDDIT_USERNAME"
 REDDIT_PASSWORD="YOUR-REDDIT_PASSWORD"
 REDDIT_USER_AGENT="User-Agent: Reddit2Tube/1.0 by YOUR-REDDIT-USERNAME"
+
+# Optional Reddit anti-bot fallback. Set one, not both, when Reddit challenges
+# requests from your IP address. The browser must already be logged in to Reddit.
+# REDDIT_COOKIES_FROM_BROWSER="firefox"
+# REDDIT_COOKIES_FILE="/absolute/path/to/reddit-cookies.txt"
 
 # YouTube API V3
 CLIENT_SECRETS_FILE='config/client_secret.json'
@@ -226,6 +231,14 @@ python Reddit2Tube.py \
 ```
 Add the flag `--made_for_kids` if you want to make the video kid friendly. Otherwise, don't set this flag.  
 To skip the YouTube upload part use the `--just_download` flag.
+
+If Reddit returns an anti-bot or login challenge while downloading, update the
+dependencies with `python -m pip install -r requirements.txt`. If the challenge
+continues, set `REDDIT_COOKIES_FROM_BROWSER` to a supported browser name (for
+example `firefox` or `chrome`), or set `REDDIT_COOKIES_FILE` to a Netscape-format
+cookie file exported from a browser session that can open the Reddit post. Do
+not set both variables. Cookie contents are passed directly to yt-dlp and are
+not logged by Reddit2Tube.
 
 
 __Output example__

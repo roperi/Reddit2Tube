@@ -12,7 +12,7 @@ httplib2==0.15.0
 idna==3.6
 mutagen==1.47.0
 oauthlib==3.2.2
-praw==7.7.1
+praw==7.8.1
 prawcore==2.4.0
 protobuf==4.25.1
 pyasn1==0.5.1
@@ -29,4 +29,4 @@ uritemplate==3.0.1
 urllib3==2.1.0
 websocket-client==1.8.0
 websockets==13.1
-yt-dlp==2023.12.30
+yt-dlp>=2026.06.09
