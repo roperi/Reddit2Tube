@@ -1,28 +1,11 @@
-# Function to read templates from a file
+"""Compatibility helpers for older imports."""
+
+from reddit2tube.templates import read_template, render_templates
+
+
 def read_templates(file_path):
-    with open(file_path, 'r') as template_file:
-        content = template_file.read()
-    return content.strip()
+    return read_template(file_path)
 
 
 def generate_updated_info(submission, title_template, description_template):
-    submission_info = {
-        'title': submission.title[:70] + '...',
-        'id': submission.id,
-        'author': submission.author.name,
-        'selftext': submission.selftext,
-        'url': submission.url,
-        'score': submission.score,
-        'num_comments': submission.num_comments,
-        'created_utc': submission.created_utc,
-        'subreddit': submission.subreddit,
-        'is_self': submission.is_self,
-        'link_flair_text': submission.link_flair_text,
-        'locked': submission.locked,
-    }
-
-    # Format the title and description templates using the submission_info dictionary
-    new_title = title_template.format(**submission_info)
-    new_description = description_template.format(**submission_info)
-
-    return new_title, new_description
+    return render_templates(submission, title_template, description_template)
