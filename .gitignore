@@ -63,6 +63,7 @@ coverage.xml
 
 # Environment 
 .env
+.venv/
 
 # Sphinx documentation
 docs/_build/
@@ -75,6 +76,10 @@ target/
 
 # logs
 log/
+
+# Downloads and test output
+downloads/
+.pytest_cache/
 
 # Configuration
 config/
