@@ -25,6 +25,10 @@ being prepared for its next tagged release.
 
 ### Changed
 
+- Switched dependency management, local development commands, hooks, and CI
+  to uv with a committed lockfile.
+- Removed the legacy requirements files; uv is now the supported installation
+  workflow.
 - Refactored Reddit, yt-dlp, YouTube, persistence, and workflow logic into
   testable boundaries.
 - Improved CLI validation, error reporting, exit codes, and run summaries.

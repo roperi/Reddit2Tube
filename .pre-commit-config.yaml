@@ -7,21 +7,21 @@ repos:
     hooks:
       - id: ruff-format-check
         name: ruff format check
-        entry: ruff format --check
+        entry: uv run --locked ruff format --check
         language: system
         types: [python]
         pass_filenames: false
         stages: [pre-commit]
       - id: ruff-lint
         name: ruff lint
-        entry: ruff check
+        entry: uv run --locked ruff check
         language: system
         types: [python]
         pass_filenames: false
         stages: [pre-commit]
       - id: pytest-coverage
         name: pytest with coverage
-        entry: pytest --cov --cov-report=term-missing
+        entry: uv run --locked pytest --cov --cov-report=term-missing
         language: system
         pass_filenames: false
         stages: [pre-push]

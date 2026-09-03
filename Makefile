@@ -1,7 +1,7 @@
 SHELL := /bin/sh
 
-PYTHON ?= python3
-PIP := $(PYTHON) -m pip
+UV ?= uv
+UV_RUN := $(UV) run --locked
 RUFF ?= ruff
 PYTEST ?= pytest
 PRE_COMMIT ?= pre-commit
@@ -14,29 +14,29 @@ help: ## Show available development commands
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage: make <target>\n\nTargets:\n"} /^[a-zA-Z0-9_-]+:.*##/ {printf "  %-16s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 install: ## Install the project and development dependencies
-	$(PIP) install -e '.[dev]'
+	$(UV) sync --locked --dev
 
 format: ## Format Python source files with Ruff
-	$(RUFF) format .
+	$(UV_RUN) $(RUFF) format .
 
 format-check: ## Check Python formatting without modifying files
-	$(RUFF) format --check .
+	$(UV_RUN) $(RUFF) format --check .
 
 lint: ## Run Ruff lint checks
-	$(RUFF) check .
+	$(UV_RUN) $(RUFF) check .
 
 test: ## Run the offline test suite
-	$(PYTEST) -q
+	$(UV_RUN) $(PYTEST) -q
 
 coverage: ## Run tests with the configured coverage gate
-	$(PYTEST) --cov --cov-report=term-missing
+	$(UV_RUN) $(PYTEST) --cov --cov-report=term-missing
 
 check: format-check lint coverage ## Run the complete local quality gate
 
 install-hooks: ## Install pre-commit and pre-push hooks
-	$(PRE_COMMIT) install --hook-type pre-commit
-	$(PRE_COMMIT) install --hook-type pre-push
+	$(UV_RUN) $(PRE_COMMIT) install --hook-type pre-commit
+	$(UV_RUN) $(PRE_COMMIT) install --hook-type pre-push
 
 hooks-check: ## Run both configured hook stages against the repository
-	$(PRE_COMMIT) run --all-files --hook-stage pre-commit
-	$(PRE_COMMIT) run --all-files --hook-stage pre-push
+	$(UV_RUN) $(PRE_COMMIT) run --all-files --hook-stage pre-commit
+	$(UV_RUN) $(PRE_COMMIT) run --all-files --hook-stage pre-push
