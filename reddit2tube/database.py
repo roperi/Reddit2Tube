@@ -1,6 +1,7 @@
 """SQLite persistence for idempotent uploads."""
 
 import sqlite3
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -23,6 +24,14 @@ class VideoRepository:
                 """
             )
             self._add_column_if_missing(connection, "youtube_video_id", "TEXT")
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS upload_attempts (
+                    attempt_date TEXT PRIMARY KEY,
+                    attempts INTEGER NOT NULL DEFAULT 0
+                )
+                """
+            )
 
     @staticmethod
     def _add_column_if_missing(connection: sqlite3.Connection, name: str, definition: str) -> None:
@@ -53,3 +62,25 @@ class VideoRepository:
                 """,
                 (video_id, title, youtube_video_id),
             )
+
+    def reserve_upload_attempt(self, limit: int, *, now: datetime | None = None) -> bool:
+        """Atomically reserve an upload attempt for the current UTC day."""
+        if limit < 1:
+            raise ValueError("Upload attempt limit must be positive.")
+        self.initialize()
+        attempt_date = (now or datetime.now(timezone.utc)).date().isoformat()
+        with sqlite3.connect(self.database_file, isolation_level="IMMEDIATE") as connection:
+            current = connection.execute(
+                "SELECT attempts FROM upload_attempts WHERE attempt_date = ?", (attempt_date,)
+            ).fetchone()
+            attempts = int(current[0]) if current else 0
+            if attempts >= limit:
+                return False
+            connection.execute(
+                """
+                INSERT INTO upload_attempts (attempt_date, attempts) VALUES (?, 1)
+                ON CONFLICT(attempt_date) DO UPDATE SET attempts = attempts + 1
+                """,
+                (attempt_date,),
+            )
+            return True

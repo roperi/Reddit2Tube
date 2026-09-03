@@ -150,6 +150,12 @@ Useful options:
 | `--made_for_kids` | off | Set YouTube’s self-declared kids flag |
 | `--just_download` | off | Skip YouTube authentication and upload |
 | `--verbose` | off | Enable debug logging |
+| `--troubleshooting-upload` | off | Private, long-form-only uploads with a six-attempt UTC-day cap |
+
+The troubleshooting upload profile is temporary and opt-in. It validates and
+fully decodes each candidate with `ffprobe`/`ffmpeg`, skips likely Shorts, and
+records upload-attempt reservations in SQLite before starting an upload. It
+requires both `ffprobe` and `ffmpeg` to be available on `PATH`.
 
 The process exits non-zero for invalid configuration or failed submissions.
 Independent submissions continue to be attempted, and the final log includes a

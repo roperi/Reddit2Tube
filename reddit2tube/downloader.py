@@ -7,6 +7,8 @@ import re
 from collections.abc import Mapping
 from pathlib import Path
 
+from .media import inspect_media
+
 
 def safe_filename(value: str, max_length: int = 120) -> str:
     cleaned = re.sub(r"[^A-Za-z0-9._ -]+", "_", value).strip(" .")
@@ -62,7 +64,22 @@ def download_video(
     try:
         with yt_dlp.YoutubeDL(options) as ydl:
             info = ydl.extract_info(video_url, download=True)
-            return Path(ydl.prepare_filename(info))
+            prepared = Path(ydl.prepare_filename(info))
+            if prepared.is_file():
+                inspect_media(prepared)
+                return prepared
+            candidates = sorted(directory.glob(f"{safe_filename(video_title)}.*"))
+            candidates = [
+                candidate
+                for candidate in candidates
+                if candidate.is_file() and candidate.suffix not in {".part", ".ytdl"}
+            ]
+            if len(candidates) != 1:
+                raise FileNotFoundError(
+                    f"yt-dlp did not produce an unambiguous media file for {video_title!r}"
+                )
+            inspect_media(candidates[0])
+            return candidates[0]
     except yt_dlp.utils.DownloadError as error:
         if is_reddit_metadata_error(error):
             raise RuntimeError(
