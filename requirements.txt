@@ -1,8 +1,0 @@
-# Runtime dependencies. The canonical project metadata lives in pyproject.toml.
-google-api-python-client>=2.100
-google-auth>=2.20
-google-auth-oauthlib>=1.0
-httplib2>=0.22
-praw>=7.8
-python-dotenv>=1.0
-yt-dlp>=2026.06.09

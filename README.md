@@ -40,11 +40,13 @@ content-owner terms, copyright, rate limits, and community rules.
 
 ## Quick start
 
+Install uv using the instructions at
+<https://docs.astral.sh/uv/getting-started/installation/> before running the
+commands below.
+
 ```bash
 git clone https://github.com/roperi/Reddit2Tube.git
 cd Reddit2Tube
-python -m venv .venv
-source .venv/bin/activate
 make install
 make install-hooks
 cp .env.example .env
@@ -169,6 +171,10 @@ Install the project with its development tools:
 make install
 ```
 
+`make install` uses uv to create or update the project environment from the
+committed `uv.lock` file. The project environment lives in `.venv/`; activate
+it manually only when needed, or use `uv run` for individual commands.
+
 Run the complete local quality gate:
 
 ```bash
@@ -193,7 +199,7 @@ file. Keep the process single-instance if multiple schedules could overlap.
 Example cron entry:
 
 ```cron
-0 5 * * 1 cd /path/to/Reddit2Tube && /path/to/Reddit2Tube/.venv/bin/reddit2tube --subreddit_name cats --reddit_num_submissions 3 --time_filter week --privacy_status private
+0 5 * * 1 cd /path/to/Reddit2Tube && uv run --locked reddit2tube --subreddit_name cats --reddit_num_submissions 3 --time_filter week --privacy_status private
 ```
 
 Start with `private` or `unlisted` uploads while validating templates, quota,

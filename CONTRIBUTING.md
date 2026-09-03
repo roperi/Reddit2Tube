@@ -1,13 +1,16 @@
 # Contributing
 
-Create a virtual environment and install the development dependencies:
+Install uv using the instructions at
+<https://docs.astral.sh/uv/getting-started/installation/>, then install the
+development dependencies:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
 make install
 make install-hooks
 ```
+
+The project environment is managed by uv in `.venv/`. Use `uv run --locked`
+for commands that are not exposed by the Makefile.
 
 Before opening a pull request, run:
 
