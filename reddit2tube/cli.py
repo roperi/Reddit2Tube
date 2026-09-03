@@ -28,6 +28,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--made_for_kids", action="store_true", help="Declare videos made for kids")
     parser.add_argument("--just_download", action="store_true", help="Skip YouTube uploading")
     parser.add_argument("--verbose", action="store_true", help="Enable debug logging")
+    parser.add_argument(
+        "--troubleshooting-upload",
+        action="store_true",
+        help="Use private, long-form-only uploads with a six-attempt daily cap",
+    )
     return parser
 
 
@@ -46,6 +51,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         privacy_status=args.privacy_status,
         made_for_kids=args.made_for_kids,
         just_download=args.just_download,
+        troubleshooting_upload=args.troubleshooting_upload,
     )
     try:
         summary = run_workflow(load_settings(), options, logger=logger)

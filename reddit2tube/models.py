@@ -12,6 +12,7 @@ class RunOptions:
     privacy_status: str = "private"
     made_for_kids: bool = False
     just_download: bool = False
+    troubleshooting_upload: bool = False
 
 
 @dataclass

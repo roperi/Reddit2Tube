@@ -9,6 +9,8 @@ being prepared for its next tagged release.
 
 ### Added
 
+- Resumable-upload diagnostics, media validation, quota guards, and an opt-in
+  troubleshooting upload profile.
 - Proper Python package structure with editable installation support.
 - Validated environment-based configuration and example configuration files.
 - Automatic SQLite initialization and idempotent upload tracking.

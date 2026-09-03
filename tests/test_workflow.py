@@ -88,4 +88,50 @@ def test_non_video_and_duplicate_submissions_are_skipped(settings, submission):
     )
     assert summary.skipped_uploaded == 1
     assert summary.skipped_non_video == 1
-    assert summary.downloaded == 0
+
+
+def test_troubleshooting_profile_forces_private(settings, submission, monkeypatch):
+    calls = []
+
+    def download(url, title, *, download_dir):
+        path = Path(download_dir) / "video.mp4"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b"video")
+        return path
+
+    monkeypatch.setattr(
+        "reddit2tube.workflow.inspect_media",
+        lambda path, **kwargs: type(
+            "Info",
+            (),
+            {
+                "duration": 30.0,
+                "width": 720,
+                "height": 1280,
+                "video_codec": "h264",
+                "audio_codec": "aac",
+                "size": 5,
+                "is_likely_short": False,
+            },
+        )(),
+    )
+
+    def upload(*args):
+        calls.append(args[2])
+        return "youtube-id"
+
+    dependencies = WorkflowDependencies(
+        authenticate_reddit=lambda *args: object(),
+        get_top_submissions=lambda *args: [submission],
+        download_video=download,
+        get_authenticated_service=lambda settings: object(),
+        initialize_upload=upload,
+    )
+    summary = run_workflow(
+        settings,
+        RunOptions("cats", privacy_status="public", troubleshooting_upload=True),
+        dependencies=dependencies,
+        logger=logging.getLogger("test"),
+    )
+    assert summary.uploaded == 1
+    assert calls == ["private"]

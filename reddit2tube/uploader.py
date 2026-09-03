@@ -16,6 +16,7 @@ from .config import Settings
 logger = logging.getLogger("reddit2tube.youtube")
 httplib2.RETRIES = 1
 MAX_RETRIES = 10
+UPLOAD_CHUNK_SIZE = 8 * 1024 * 1024
 RETRY_STATUS_CODES = {500, 502, 503, 504}
 RETRY_EXCEPTIONS = (
     httplib2.HttpLib2Error,
@@ -28,6 +29,10 @@ RETRY_EXCEPTIONS = (
     client.ResponseNotReady,
     client.BadStatusLine,
 )
+
+
+class UploadLimitReached(RuntimeError):
+    """YouTube rejected an upload because the account upload limit was reached."""
 
 
 def get_authenticated_service(settings: Settings | None = None) -> Any:
@@ -70,6 +75,8 @@ def initialize_upload(
     *,
     sleep: Callable[[float], None] = time.sleep,
     random_value: Callable[[], float] = random.random,
+    chunk_size: int = UPLOAD_CHUNK_SIZE,
+    max_retries: int = MAX_RETRIES,
 ) -> str:
     from googleapiclient.errors import HttpError
     from googleapiclient.http import MediaFileUpload
@@ -91,15 +98,26 @@ def initialize_upload(
         body["snippet"]["tags"] = [
             tag.strip() for tag in options["keywords"].split(",") if tag.strip()
         ]
-    media_body = MediaFileUpload(str(options["file"]), chunksize=1024 * 1024, resumable=True)
+    media_body = MediaFileUpload(str(options["file"]), chunksize=chunk_size, resumable=True)
     request = youtube.videos().insert(part=",".join(body), body=body, media_body=media_body)
+    logger.info(
+        "Starting upload of %r (%d bytes, chunk size %d bytes)",
+        options["title"],
+        getattr(media_body, "size", lambda: None)() or 0,
+        chunk_size,
+    )
     response = None
     retry = 0
     while response is None:
         try:
-            logger.info("Uploading %r in chunks (please wait)...", options["title"])
-            _, response = request.next_chunk()
+            status, response = request.next_chunk()
+            progress = getattr(status, "progress", lambda: None)() if status else None
+            if progress is not None:
+                logger.info("Uploaded %.1f%% of %r", progress * 100, options["title"])
         except HttpError as error:
+            message = str(error).lower()
+            if "exceeded the number of videos" in message or "number of videos" in message:
+                raise UploadLimitReached(str(error)) from error
             if error.resp.status not in RETRY_STATUS_CODES:
                 raise
             logger.warning("Retryable YouTube HTTP error %s", error.resp.status)
@@ -107,8 +125,9 @@ def initialize_upload(
             logger.warning("Retryable YouTube transport error: %s", error)
         if response is None:
             retry += 1
-            if retry > MAX_RETRIES:
+            if retry > max_retries:
                 raise RuntimeError("YouTube upload exceeded the retry limit.")
+            logger.info("Retrying resumable upload (attempt %d/%d)", retry, max_retries)
             sleep(random_value() * (2**retry))
     video_id = response.get("id") if isinstance(response, dict) else None
     if not video_id:
