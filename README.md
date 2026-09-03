@@ -126,18 +126,21 @@ are shortened before template rendering.
 The original script entrypoint remains supported:
 
 ```bash
-python Reddit2Tube.py \
+uv run --locked python Reddit2Tube.py \
   --subreddit_name cats \
   --reddit_num_submissions 1 \
   --time_filter day \
   --privacy_status private
 ```
 
+This runs the original script entrypoint inside the uv-managed project
+environment.
+
 The installed command and module entrypoints are equivalent:
 
 ```bash
-reddit2tube --subreddit_name cats --reddit_num_submissions 1
-python -m reddit2tube --subreddit_name cats --just_download
+uv run --locked reddit2tube --subreddit_name cats --reddit_num_submissions 1
+uv run --locked python -m reddit2tube --subreddit_name cats --just_download
 ```
 
 Useful options:
