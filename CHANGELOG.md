@@ -39,6 +39,13 @@ being prepared for its next tagged release.
 - Preserved compatibility with the original `Reddit2Tube.py`, `utils.py`, and
   `src.*` import paths.
 
+### Fixed
+
+- Resumable YouTube uploads no longer consume the retry budget on every
+  successfully uploaded chunk, which previously failed any upload larger than
+  `max_retries * chunk_size` (80 MiB with defaults) and added exponential
+  backoff delays between successful chunks.
+
 ### Security
 
 - Added explicit guidance for protecting credentials, OAuth tokens, cookies,
