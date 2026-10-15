@@ -19,7 +19,7 @@ def safe_filename(value: str, max_length: int = 120) -> str:
 def get_download_options(
     *, download_dir: str | Path = "/tmp/reddit2tube", env: Mapping[str, str] | None = None
 ) -> dict:
-    values = env or os.environ
+    values = os.environ if env is None else env
     browser = values.get("REDDIT_COOKIES_FROM_BROWSER")
     cookie_file = values.get("REDDIT_COOKIES_FILE")
     if browser and cookie_file:
@@ -81,6 +81,16 @@ def download_video(
             inspect_media(candidates[0])
             return candidates[0]
     except yt_dlp.utils.DownloadError as error:
+        if "account authentication is required" in str(error).lower():
+            raise RuntimeError(
+                "Reddit requires a logged-in session to download this video. "
+                "Log into Reddit in your browser, then set "
+                "REDDIT_COOKIES_FROM_BROWSER=firefox (or chrome) in .env, "
+                "or set REDDIT_COOKIES_FILE=/absolute/path/to/reddit-cookies.txt "
+                "to a Netscape-format cookie export. Configure only one. "
+                "If cookies are already configured, refresh the logged-in session "
+                "or export fresh cookies. Reddit API credentials do not authenticate yt-dlp."
+            ) from error
         if is_reddit_metadata_error(error):
             raise RuntimeError(
                 "Reddit blocked the metadata request or returned an anti-bot challenge. "
