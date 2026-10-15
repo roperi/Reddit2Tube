@@ -38,3 +38,22 @@ def test_validate_requires_youtube_files(settings, tmp_path):
         }
     )
     configured.validate()
+
+
+def test_validate_can_skip_reddit_and_templates_for_retry(settings):
+    reduced = settings.__class__(
+        **{
+            **settings.__dict__,
+            "reddit_client_id": None,
+            "reddit_client_secret": None,
+            "reddit_user_agent": None,
+            "reddit_username": None,
+            "reddit_password": None,
+            "title_template_file": settings.title_template_file.parent / "missing-title.txt",
+            "description_template_file": settings.description_template_file.parent
+            / "missing-description.txt",
+        }
+    )
+    reduced.validate(require_reddit=False, require_templates=False)
+    with pytest.raises(ConfigurationError, match="REDDIT_CLIENT_ID"):
+        reduced.validate(require_reddit=True)

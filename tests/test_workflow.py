@@ -7,7 +7,7 @@ import pytest
 from reddit2tube.database import VideoRepository
 from reddit2tube.downloader import get_download_options
 from reddit2tube.models import RunOptions
-from reddit2tube.workflow import WorkflowDependencies, run_workflow
+from reddit2tube.workflow import WorkflowDependencies, retry_pending_uploads, run_workflow
 
 
 @pytest.mark.parametrize("cookie_source", ["browser", "file", "none"])
@@ -173,3 +173,172 @@ def test_troubleshooting_profile_forces_private(settings, submission, monkeypatc
     )
     assert summary.uploaded == 1
     assert calls == ["private"]
+
+
+def test_upload_failure_records_pending(settings, submission):
+    def download(url, title, *, download_dir, env):
+        path = Path(download_dir) / "video.mp4"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b"video")
+        return path
+
+    dependencies = WorkflowDependencies(
+        authenticate_reddit=lambda *args: object(),
+        get_top_submissions=lambda *args: [submission],
+        download_video=download,
+        get_authenticated_service=lambda settings: object(),
+        initialize_upload=lambda *args: (_ for _ in ()).throw(RuntimeError("upload failed")),
+    )
+    summary = run_workflow(
+        settings,
+        RunOptions("cats"),
+        dependencies=dependencies,
+        logger=logging.getLogger("test"),
+    )
+    assert summary.failures == 1
+    rows = VideoRepository(settings.database_file).pending_uploads()
+    assert [row.submission_id for row in rows] == ["abc123"]
+    assert rows[0].media_path.endswith("video.mp4")
+    assert rows[0].attempts == 1
+    assert "upload failed" in rows[0].last_error
+
+
+def test_successful_upload_clears_pending(settings, submission):
+    def download(url, title, *, download_dir, env):
+        path = Path(download_dir) / "video.mp4"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b"video")
+        return path
+
+    repository = VideoRepository(settings.database_file)
+    dependencies = WorkflowDependencies(
+        authenticate_reddit=lambda *args: object(),
+        get_top_submissions=lambda *args: [submission],
+        download_video=download,
+        get_authenticated_service=lambda settings: object(),
+        initialize_upload=lambda *args: "youtube-id",
+    )
+    summary = run_workflow(
+        settings,
+        RunOptions("cats"),
+        dependencies=dependencies,
+        logger=logging.getLogger("test"),
+    )
+    assert summary.uploaded == 1
+    assert repository.pending_uploads() == []
+    assert repository.contains("abc123")
+
+
+def test_retry_pending_uploads_reuses_local_file(settings):
+    repository = VideoRepository(settings.database_file)
+    media = settings.download_dir / "video.mp4"
+    media.parent.mkdir(parents=True, exist_ok=True)
+    media.write_bytes(b"video")
+    repository.record_pending("abc123", "Title", "Description", "https://reddit/abc", str(media))
+    uploads = []
+
+    def upload(youtube, options, privacy, made_for_kids):
+        uploads.append((options["title"], options["file"]))
+        return "youtube-id"
+
+    dependencies = WorkflowDependencies(
+        download_video=lambda *args, **kwargs: pytest.fail("should not re-download"),
+        get_authenticated_service=lambda settings: object(),
+        initialize_upload=upload,
+    )
+    summary = retry_pending_uploads(
+        settings,
+        RunOptions("cats"),
+        dependencies=dependencies,
+        logger=logging.getLogger("test"),
+    )
+    assert summary.uploaded == 1
+    assert summary.downloaded == 0
+    assert uploads == [("Title", media)]
+    assert repository.pending_uploads() == []
+    assert repository.contains("abc123")
+
+
+def test_retry_pending_uploads_redownloads_when_missing(settings):
+    repository = VideoRepository(settings.database_file)
+    repository.record_pending(
+        "abc123",
+        "Title",
+        "Description",
+        "https://reddit/abc",
+        str(settings.download_dir / "gone.mp4"),
+    )
+    downloads = []
+
+    def download(url, title, *, download_dir, env):
+        downloads.append((url, title))
+        path = Path(download_dir) / "video.mp4"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b"video")
+        return path
+
+    dependencies = WorkflowDependencies(
+        download_video=download,
+        get_authenticated_service=lambda settings: object(),
+        initialize_upload=lambda *args: "youtube-id",
+    )
+    summary = retry_pending_uploads(
+        settings,
+        RunOptions("cats"),
+        dependencies=dependencies,
+        logger=logging.getLogger("test"),
+    )
+    assert downloads == [("https://reddit/abc", "Title")]
+    assert summary.downloaded == 1
+    assert summary.uploaded == 1
+    assert repository.pending_uploads() == []
+
+
+def test_retry_upload_failure_keeps_pending(settings):
+    repository = VideoRepository(settings.database_file)
+    media = settings.download_dir / "video.mp4"
+    media.parent.mkdir(parents=True, exist_ok=True)
+    media.write_bytes(b"video")
+    repository.record_pending("abc123", "Title", "Description", "https://reddit/abc", str(media))
+    dependencies = WorkflowDependencies(
+        get_authenticated_service=lambda settings: object(),
+        initialize_upload=lambda *args: (_ for _ in ()).throw(RuntimeError("still broken")),
+    )
+    summary = retry_pending_uploads(
+        settings,
+        RunOptions("cats"),
+        dependencies=dependencies,
+        logger=logging.getLogger("test"),
+    )
+    assert summary.failures == 1
+    rows = repository.pending_uploads()
+    assert len(rows) == 1
+    assert rows[0].attempts == 1
+    assert "still broken" in rows[0].last_error
+
+
+def test_retry_skips_submissions_already_uploaded(settings):
+    repository = VideoRepository(settings.database_file)
+    repository.mark_uploaded("abc123", "Title", "youtube-id")
+    repository.record_pending("abc123", "Title", "Description", "https://reddit/abc")
+    dependencies = WorkflowDependencies(
+        get_authenticated_service=lambda settings: pytest.fail("should not authenticate"),
+    )
+    summary = retry_pending_uploads(
+        settings,
+        RunOptions("cats"),
+        dependencies=dependencies,
+        logger=logging.getLogger("test"),
+    )
+    assert summary.skipped_uploaded == 1
+    assert summary.uploaded == 0
+    assert repository.pending_uploads() == []
+
+
+def test_retry_rejects_download_only_mode(settings):
+    with pytest.raises(ValueError):
+        retry_pending_uploads(
+            settings,
+            RunOptions("cats", just_download=True),
+            logger=logging.getLogger("test"),
+        )

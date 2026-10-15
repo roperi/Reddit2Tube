@@ -8,8 +8,8 @@ from pathlib import Path
 
 from .config import ConfigurationError, load_settings
 from .logging_config import configure_logging
-from .models import RunOptions
-from .workflow import run_workflow
+from .models import RunOptions, RunSummary
+from .workflow import retry_pending_uploads, run_workflow
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -33,13 +33,18 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Use private, long-form-only uploads with a six-attempt daily cap",
     )
+    parser.add_argument(
+        "--retry-failed",
+        action="store_true",
+        help="Retry uploads previously recorded as pending or failed",
+    )
     return parser
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
-    if not args.subreddit_name:
+    if not args.subreddit_name and not args.retry_failed:
         parser.print_help()
         return 0
     logger = configure_logging(Path.cwd() / "log" / "Reddit2Tube.log", verbose=args.verbose)
@@ -54,7 +59,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         troubleshooting_upload=args.troubleshooting_upload,
     )
     try:
-        summary = run_workflow(load_settings(), options, logger=logger)
+        settings = load_settings()
+        summary = RunSummary()
+        if args.retry_failed:
+            summary = summary.merge(retry_pending_uploads(settings, options, logger=logger))
+        if args.subreddit_name:
+            summary = summary.merge(run_workflow(settings, options, logger=logger))
     except (ConfigurationError, ValueError, OSError) as error:
         logger.error("Cannot start Reddit2Tube: %s", error)
         return 2

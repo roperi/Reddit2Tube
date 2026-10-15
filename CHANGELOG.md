@@ -9,6 +9,8 @@ being prepared for its next tagged release.
 
 ### Added
 
+- Durable tracking of uploads that are pending or failed, plus a `--retry-failed`
+  mode that re-uploads them without depending on the Reddit listing.
 - Resumable-upload diagnostics, media validation, quota guards, and an opt-in
   troubleshooting upload profile.
 - Proper Python package structure with editable installation support.

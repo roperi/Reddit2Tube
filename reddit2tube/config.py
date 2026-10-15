@@ -36,17 +36,26 @@ class Settings:
     api_service_name: str
     api_version: str
 
-    def validate(self, *, require_youtube: bool = True) -> None:
-        required = {
-            "REDDIT_CLIENT_ID": self.reddit_client_id,
-            "REDDIT_CLIENT_SECRET": self.reddit_client_secret,
-            "REDDIT_USER_AGENT": self.reddit_user_agent,
-            "REDDIT_USERNAME": self.reddit_username,
-            "REDDIT_PASSWORD": self.reddit_password,
-        }
-        missing = [name for name, value in required.items() if not value]
-        if missing:
-            raise ConfigurationError("Missing required Reddit configuration: " + ", ".join(missing))
+    def validate(
+        self,
+        *,
+        require_youtube: bool = True,
+        require_reddit: bool = True,
+        require_templates: bool = True,
+    ) -> None:
+        if require_reddit:
+            required = {
+                "REDDIT_CLIENT_ID": self.reddit_client_id,
+                "REDDIT_CLIENT_SECRET": self.reddit_client_secret,
+                "REDDIT_USER_AGENT": self.reddit_user_agent,
+                "REDDIT_USERNAME": self.reddit_username,
+                "REDDIT_PASSWORD": self.reddit_password,
+            }
+            missing = [name for name, value in required.items() if not value]
+            if missing:
+                raise ConfigurationError(
+                    "Missing required Reddit configuration: " + ", ".join(missing)
+                )
         if self.reddit_cookies_from_browser and self.reddit_cookies_file:
             raise ConfigurationError(
                 "Set only one of REDDIT_COOKIES_FROM_BROWSER or REDDIT_COOKIES_FILE."
@@ -55,12 +64,15 @@ class Settings:
             raise ConfigurationError(
                 f"Reddit cookie file does not exist: {self.reddit_cookies_file}"
             )
-        if not self.title_template_file.is_file():
-            raise ConfigurationError(f"Title template does not exist: {self.title_template_file}")
-        if not self.description_template_file.is_file():
-            raise ConfigurationError(
-                f"Description template does not exist: {self.description_template_file}"
-            )
+        if require_templates:
+            if not self.title_template_file.is_file():
+                raise ConfigurationError(
+                    f"Title template does not exist: {self.title_template_file}"
+                )
+            if not self.description_template_file.is_file():
+                raise ConfigurationError(
+                    f"Description template does not exist: {self.description_template_file}"
+                )
         if require_youtube:
             if not self.client_secrets_file:
                 raise ConfigurationError("CLIENT_SECRETS_FILE is required when uploading.")
