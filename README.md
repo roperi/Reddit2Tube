@@ -14,19 +14,26 @@ idempotency, retries, logging, and offline testing.
 ## Workflow
 
 ```text
-Reddit API -> filter video submissions -> render templates -> SQLite duplicate check
-                                                        |
-                                      yt-dlp download <-+
-                                                        |
-                                  YouTube upload (optional)
-                                                        |
-                                  record successful upload
+Reddit API
+  -> filter video submissions
+  -> render templates
+  -> SQLite duplicate check
+  -> yt-dlp download
+  -> record pending upload (SQLite)
+  -> YouTube upload (optional)
+       -> success: record the upload
+       -> failure: keep the pending row for --retry-failed
 ```
 
-In upload mode the application records a submission only after YouTube returns
-an upload ID. Download-only runs intentionally do not mark a submission as
-uploaded, so the same video can be uploaded later. This makes retries safe
-when a run is interrupted or an upload fails.
+In upload mode the application records a submission in two stages. It writes a
+pending row before uploading and marks the submission as uploaded only once
+YouTube returns an upload ID. A failed or interrupted upload keeps its pending
+row, so it can be retried later with `--retry-failed` regardless of whether the
+submission is still in the listing window.
+
+Download-only runs neither write pending rows nor mark submissions as uploaded.
+Re-uploading a download-only video later therefore still depends on the
+submission appearing in the top submissions again.
 
 ## Requirements
 
@@ -185,15 +192,36 @@ fully decodes each candidate with `ffprobe`/`ffmpeg`, skips likely Shorts, and
 records upload-attempt reservations in SQLite before starting an upload. It
 requires both `ffprobe` and `ffmpeg` to be available on `PATH`.
 
-Uploads that fail are recorded in the SQLite database. Pass `--retry-failed` to
-retry them without consulting Reddit: the recorded local file is reused when it
-still exists, otherwise it is downloaded again from the recorded URL. This works
-even after the submission has left the listing window, and can be combined with
-`--subreddit_name` to retry failures and then process new submissions in one run.
-
 The process exits non-zero for invalid configuration or failed submissions.
 Independent submissions continue to be attempted, and the final log includes a
 run summary.
+
+### Resuming failed uploads
+
+Uploads that fail are recorded in the `pending_uploads` table in the SQLite
+database. Retry them with:
+
+```bash
+uv run --locked reddit2tube --retry-failed
+```
+
+A retry reuses the recorded local file when it still exists, otherwise it
+downloads the video again from the recorded URL. Because the source URL and the
+rendered title and description are stored, retrying does not consult Reddit and
+works even after the submission has left the listing window. Retries use the
+current command-line options for category, privacy status, and made-for-kids.
+
+Add `--subreddit_name` to retry failures first and then process new submissions
+in the same run:
+
+```bash
+uv run --locked reddit2tube --retry-failed --subreddit_name cats --time_filter day
+```
+
+Retry mode needs YouTube credentials, plus Reddit cookies only when a video has
+to be downloaded again. It cannot be combined with `--just_download`. When
+`--troubleshooting-upload` is also passed, retries respect the same six-attempt
+UTC-day cap.
 
 ## Development
 
@@ -237,6 +265,13 @@ Example cron entry:
 Start with `private` or `unlisted` uploads while validating templates, quota,
 and content policy. YouTube upload quota is finite and can make a failed retry
 expensive.
+
+A failed upload is recorded rather than lost when the listing moves on. To
+recover failures automatically, schedule a follow-up retry:
+
+```cron
+30 6 * * * cd /path/to/Reddit2Tube && uv run --locked reddit2tube --retry-failed
+```
 
 ## Security and repository hygiene
 
