@@ -129,6 +129,7 @@ class VideoRepository:
             )
 
     def set_pending_media(self, submission_id: str, media_path: str) -> None:
+        """Associate a downloaded media file with a pending upload."""
         self.initialize()
         with sqlite3.connect(self.database_file) as connection:
             connection.execute(
@@ -156,6 +157,7 @@ class VideoRepository:
             )
 
     def pending_uploads(self) -> list[PendingUpload]:
+        """Return tracked uploads that have not succeeded yet."""
         self.initialize()
         with sqlite3.connect(self.database_file) as connection:
             rows = connection.execute(
@@ -180,6 +182,7 @@ class VideoRepository:
         ]
 
     def clear_pending(self, submission_id: str) -> None:
+        """Remove a pending upload after it succeeds."""
         self.initialize()
         with sqlite3.connect(self.database_file) as connection:
             connection.execute(

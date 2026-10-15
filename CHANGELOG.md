@@ -38,6 +38,7 @@ being prepared for its next tagged release.
 - Centralized application logging with rotating log files.
 - Reworked the README around quick start, configuration, operations, and local
   development workflows.
+- Documented resuming failed uploads with `--retry-failed`.
 - Preserved compatibility with the original `Reddit2Tube.py`, `utils.py`, and
   `src.*` import paths.
 

@@ -44,6 +44,7 @@ class RunSummary:
         return self.failures == 0
 
     def merge(self, other: RunSummary) -> RunSummary:
+        """Return a summary that sums the counters of both runs."""
         return RunSummary(
             examined=self.examined + other.examined,
             skipped_non_video=self.skipped_non_video + other.skipped_non_video,
