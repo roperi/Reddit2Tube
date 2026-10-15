@@ -1,5 +1,7 @@
 """Small domain models shared by the application layers."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 
 
@@ -15,6 +17,19 @@ class RunOptions:
     troubleshooting_upload: bool = False
 
 
+@dataclass(frozen=True)
+class PendingUpload:
+    """A submission intended for upload that has not yet succeeded."""
+
+    submission_id: str
+    title: str
+    description: str
+    source_url: str
+    media_path: str | None
+    attempts: int
+    last_error: str | None
+
+
 @dataclass
 class RunSummary:
     examined: int = 0
@@ -27,3 +42,13 @@ class RunSummary:
     @property
     def successful(self) -> bool:
         return self.failures == 0
+
+    def merge(self, other: RunSummary) -> RunSummary:
+        return RunSummary(
+            examined=self.examined + other.examined,
+            skipped_non_video=self.skipped_non_video + other.skipped_non_video,
+            skipped_uploaded=self.skipped_uploaded + other.skipped_uploaded,
+            downloaded=self.downloaded + other.downloaded,
+            uploaded=self.uploaded + other.uploaded,
+            failures=self.failures + other.failures,
+        )

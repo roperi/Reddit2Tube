@@ -37,3 +37,28 @@ def test_main_returns_one_for_unexpected_workflow_error(monkeypatch, settings):
         lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("network down")),
     )
     assert cli.main(["--subreddit_name", "cats"]) == 1
+
+
+def test_main_retries_failed_without_subreddit(monkeypatch, settings):
+    monkeypatch.setattr(cli, "load_settings", lambda: settings)
+    monkeypatch.setattr(
+        cli, "retry_pending_uploads", lambda *args, **kwargs: RunSummary(uploaded=1)
+    )
+    assert cli.main(["--retry-failed"]) == 0
+
+
+def test_main_returns_one_when_retry_has_failures(monkeypatch, settings):
+    monkeypatch.setattr(cli, "load_settings", lambda: settings)
+    monkeypatch.setattr(
+        cli, "retry_pending_uploads", lambda *args, **kwargs: RunSummary(failures=1)
+    )
+    assert cli.main(["--retry-failed"]) == 1
+
+
+def test_main_retries_before_running_workflow(monkeypatch, settings):
+    monkeypatch.setattr(cli, "load_settings", lambda: settings)
+    monkeypatch.setattr(
+        cli, "retry_pending_uploads", lambda *args, **kwargs: RunSummary(uploaded=1)
+    )
+    monkeypatch.setattr(cli, "run_workflow", lambda *args, **kwargs: RunSummary(uploaded=1))
+    assert cli.main(["--subreddit_name", "cats", "--retry-failed"]) == 0

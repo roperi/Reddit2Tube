@@ -27,6 +27,15 @@ class WorkflowDependencies:
     initialize_upload: Callable[..., str] = initialize_upload
 
 
+def _download_env(settings: Settings) -> dict[str, str]:
+    env: dict[str, str] = {}
+    if settings.reddit_cookies_from_browser:
+        env["REDDIT_COOKIES_FROM_BROWSER"] = settings.reddit_cookies_from_browser
+    if settings.reddit_cookies_file:
+        env["REDDIT_COOKIES_FILE"] = str(settings.reddit_cookies_file)
+    return env
+
+
 def run_workflow(
     settings: Settings,
     options: RunOptions,
@@ -60,11 +69,7 @@ def run_workflow(
         reddit, options.subreddit_name, options.reddit_num_submissions, options.time_filter
     )
     youtube = None
-    download_env = {}
-    if settings.reddit_cookies_from_browser:
-        download_env["REDDIT_COOKIES_FROM_BROWSER"] = settings.reddit_cookies_from_browser
-    if settings.reddit_cookies_file:
-        download_env["REDDIT_COOKIES_FILE"] = str(settings.reddit_cookies_file)
+    download_env = _download_env(settings)
     summary = RunSummary()
     for submission in submissions:
         summary.examined += 1
@@ -85,10 +90,16 @@ def run_workflow(
             video_title, video_description = render_templates(
                 submission, title_template, description_template
             )
+            if not options.just_download:
+                # Record intent before downloading so a crash or failure leaves a
+                # durable record that can be retried without the Reddit listing.
+                repo.record_pending(submission_id, video_title, video_description, video_url)
             local_video = deps.download_video(
                 video_url, video_title, download_dir=settings.download_dir, env=download_env
             )
             summary.downloaded += 1
+            if not options.just_download:
+                repo.set_pending_media(submission_id, str(local_video))
             if options.troubleshooting_upload:
                 media = inspect_media(local_video, decode=True)
                 log.info(
@@ -127,11 +138,92 @@ def run_workflow(
                 summary.uploaded += 1
             if not options.just_download:
                 repo.mark_uploaded(submission_id, title, youtube_video_id)
+                repo.clear_pending(submission_id)
         except UploadLimitReached as error:
             summary.failures += 1
+            if not options.just_download:
+                repo.record_failure(submission_id, str(error))
             log.error("YouTube upload limit reached; stopping this run: %s", error)
             break
-        except Exception:
+        except Exception as error:
             summary.failures += 1
+            if not options.just_download:
+                repo.record_failure(submission_id, str(error))
             log.exception("Failed to process submission %r", title)
+    return summary
+
+
+def retry_pending_uploads(
+    settings: Settings,
+    options: RunOptions,
+    *,
+    dependencies: WorkflowDependencies | None = None,
+    repository: VideoRepository | None = None,
+    logger: logging.Logger | None = None,
+) -> RunSummary:
+    """Re-upload submissions recorded as pending without consulting Reddit."""
+    deps = dependencies or WorkflowDependencies()
+    log = logger or logging.getLogger("reddit2tube")
+    if options.just_download:
+        raise ValueError("Retrying failed uploads requires YouTube upload mode")
+    settings.validate(require_reddit=False, require_templates=False)
+    repo = repository or VideoRepository(settings.database_file)
+    repo.initialize()
+    pending = repo.pending_uploads()
+    summary = RunSummary()
+    if not pending:
+        log.info("No pending uploads to retry")
+        return summary
+    download_env = _download_env(settings)
+    youtube = None
+    for item in pending:
+        summary.examined += 1
+        submission_id = item.submission_id
+        try:
+            if repo.contains(submission_id):
+                repo.clear_pending(submission_id)
+                summary.skipped_uploaded += 1
+                continue
+            media_path = Path(item.media_path) if item.media_path else None
+            if media_path is None or not media_path.is_file():
+                if not item.source_url:
+                    raise RuntimeError(f"No local media or source URL to retry {item.title!r}")
+                log.info("Re-downloading %r for retry", item.title)
+                media_path = deps.download_video(
+                    item.source_url,
+                    item.title,
+                    download_dir=settings.download_dir,
+                    env=download_env,
+                )
+                repo.set_pending_media(submission_id, str(media_path))
+                summary.downloaded += 1
+            if options.troubleshooting_upload and not repo.reserve_upload_attempt(6):
+                log.warning("Troubleshooting upload limit reached; stopping retry")
+                break
+            if youtube is None:
+                log.info("Authenticating with YouTube")
+                youtube = deps.get_authenticated_service(settings)
+            youtube_video_id = deps.initialize_upload(
+                youtube,
+                {
+                    "title": item.title,
+                    "description": item.description,
+                    "category": options.category,
+                    "file": media_path,
+                },
+                "private" if options.troubleshooting_upload else options.privacy_status,
+                options.made_for_kids,
+            )
+            summary.uploaded += 1
+            repo.mark_uploaded(submission_id, item.title, youtube_video_id)
+            repo.clear_pending(submission_id)
+        except UploadLimitReached as error:
+            summary.failures += 1
+            repo.record_failure(submission_id, str(error))
+            log.error("YouTube upload limit reached; stopping retry: %s", error)
+            break
+        except Exception as error:
+            summary.failures += 1
+            repo.record_failure(submission_id, str(error))
+            log.exception("Failed to retry submission %r", item.title)
     return summary

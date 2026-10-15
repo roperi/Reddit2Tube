@@ -4,6 +4,8 @@ import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .models import PendingUpload
+
 
 class VideoRepository:
     def __init__(self, database_file: str | Path):
@@ -29,6 +31,21 @@ class VideoRepository:
                 CREATE TABLE IF NOT EXISTS upload_attempts (
                     attempt_date TEXT PRIMARY KEY,
                     attempts INTEGER NOT NULL DEFAULT 0
+                )
+                """
+            )
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS pending_uploads (
+                    submission_id TEXT PRIMARY KEY,
+                    title TEXT NOT NULL,
+                    description TEXT NOT NULL DEFAULT '',
+                    source_url TEXT NOT NULL DEFAULT '',
+                    media_path TEXT,
+                    attempts INTEGER NOT NULL DEFAULT 0,
+                    last_error TEXT,
+                    created_datetime DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_datetime DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
                 """
             )
@@ -84,3 +101,87 @@ class VideoRepository:
                 (attempt_date,),
             )
             return True
+
+    def record_pending(
+        self,
+        submission_id: str,
+        title: str,
+        description: str,
+        source_url: str,
+        media_path: str | None = None,
+    ) -> None:
+        """Register a submission intended for upload so it can be retried later."""
+        self.initialize()
+        with sqlite3.connect(self.database_file) as connection:
+            connection.execute(
+                """
+                INSERT INTO pending_uploads
+                    (submission_id, title, description, source_url, media_path)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(submission_id) DO UPDATE SET
+                    title = excluded.title,
+                    description = excluded.description,
+                    source_url = excluded.source_url,
+                    media_path = COALESCE(excluded.media_path, pending_uploads.media_path),
+                    updated_datetime = CURRENT_TIMESTAMP
+                """,
+                (submission_id, title, description, source_url, media_path),
+            )
+
+    def set_pending_media(self, submission_id: str, media_path: str) -> None:
+        self.initialize()
+        with sqlite3.connect(self.database_file) as connection:
+            connection.execute(
+                """
+                UPDATE pending_uploads
+                SET media_path = ?, updated_datetime = CURRENT_TIMESTAMP
+                WHERE submission_id = ?
+                """,
+                (media_path, submission_id),
+            )
+
+    def record_failure(self, submission_id: str, error: str) -> None:
+        """Record a failed attempt against a pending upload, if it is tracked."""
+        self.initialize()
+        with sqlite3.connect(self.database_file) as connection:
+            connection.execute(
+                """
+                UPDATE pending_uploads
+                SET attempts = attempts + 1,
+                    last_error = ?,
+                    updated_datetime = CURRENT_TIMESTAMP
+                WHERE submission_id = ?
+                """,
+                (error, submission_id),
+            )
+
+    def pending_uploads(self) -> list[PendingUpload]:
+        self.initialize()
+        with sqlite3.connect(self.database_file) as connection:
+            rows = connection.execute(
+                """
+                SELECT submission_id, title, description, source_url, media_path,
+                       attempts, last_error
+                FROM pending_uploads
+                ORDER BY created_datetime, submission_id
+                """
+            ).fetchall()
+        return [
+            PendingUpload(
+                submission_id=row[0],
+                title=row[1],
+                description=row[2],
+                source_url=row[3],
+                media_path=row[4],
+                attempts=row[5],
+                last_error=row[6],
+            )
+            for row in rows
+        ]
+
+    def clear_pending(self, submission_id: str) -> None:
+        self.initialize()
+        with sqlite3.connect(self.database_file) as connection:
+            connection.execute(
+                "DELETE FROM pending_uploads WHERE submission_id = ?", (submission_id,)
+            )

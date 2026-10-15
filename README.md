@@ -178,11 +178,18 @@ Useful options:
 | `--just_download` | off | Skip YouTube authentication and upload |
 | `--verbose` | off | Enable debug logging |
 | `--troubleshooting-upload` | off | Private, long-form-only uploads with a six-attempt UTC-day cap |
+| `--retry-failed` | off | Re-upload videos recorded as pending after a failure |
 
 The troubleshooting upload profile is temporary and opt-in. It validates and
 fully decodes each candidate with `ffprobe`/`ffmpeg`, skips likely Shorts, and
 records upload-attempt reservations in SQLite before starting an upload. It
 requires both `ffprobe` and `ffmpeg` to be available on `PATH`.
+
+Uploads that fail are recorded in the SQLite database. Pass `--retry-failed` to
+retry them without consulting Reddit: the recorded local file is reused when it
+still exists, otherwise it is downloaded again from the recorded URL. This works
+even after the submission has left the listing window, and can be combined with
+`--subreddit_name` to retry failures and then process new submissions in one run.
 
 The process exits non-zero for invalid configuration or failed submissions.
 Independent submissions continue to be attempted, and the final log includes a
