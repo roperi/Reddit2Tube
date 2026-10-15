@@ -65,6 +65,69 @@ def test_initialize_upload_recovers_after_transport_error(monkeypatch, tmp_path)
     )
 
 
+def test_initialize_upload_does_not_count_progress_as_retries(monkeypatch, tmp_path):
+    pytest.importorskip("googleapiclient.http")
+
+    class Status:
+        def progress(self):
+            return 0.5
+
+    import googleapiclient.http
+
+    monkeypatch.setattr(
+        googleapiclient.http,
+        "MediaFileUpload",
+        lambda *args, **kwargs: object(),
+    )
+    # Five successful partial chunks followed by the final response must not
+    # exhaust a retry budget of one, nor trigger any backoff sleeps.
+    responses = [(Status(), None)] * 5 + [(Status(), {"id": "abc"})]
+    sleeps = []
+    assert (
+        initialize_upload(
+            FakeYouTube(FakeUploadRequest(responses)),
+            {
+                "title": "Title",
+                "description": "Description",
+                "category": "22",
+                "file": tmp_path / "v.mp4",
+            },
+            "private",
+            False,
+            sleep=sleeps.append,
+            random_value=lambda: 0,
+            max_retries=1,
+        )
+        == "abc"
+    )
+    assert sleeps == []
+
+
+def test_initialize_upload_gives_up_after_repeated_transport_errors(monkeypatch, tmp_path):
+    pytest.importorskip("googleapiclient.http")
+
+    monkeypatch.setattr(
+        "googleapiclient.http.MediaFileUpload",
+        lambda *args, **kwargs: object(),
+    )
+    request = FakeUploadRequest([OSError("connection reset")] * 3)
+    with pytest.raises(RuntimeError, match="exceeded the retry limit"):
+        initialize_upload(
+            FakeYouTube(request),
+            {
+                "title": "Title",
+                "description": "Description",
+                "category": "22",
+                "file": tmp_path / "v.mp4",
+            },
+            "private",
+            False,
+            sleep=lambda _: None,
+            random_value=lambda: 0,
+            max_retries=2,
+        )
+
+
 def test_initialize_upload_raises_specific_limit_error(monkeypatch, tmp_path):
     pytest.importorskip("googleapiclient.errors")
 

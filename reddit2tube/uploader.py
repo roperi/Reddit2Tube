@@ -111,9 +111,6 @@ def initialize_upload(
     while response is None:
         try:
             status, response = request.next_chunk()
-            progress = getattr(status, "progress", lambda: None)() if status else None
-            if progress is not None:
-                logger.info("Uploaded %.1f%% of %r", progress * 100, options["title"])
         except HttpError as error:
             message = str(error).lower()
             if "exceeded the number of videos" in message or "number of videos" in message:
@@ -121,14 +118,21 @@ def initialize_upload(
             if error.resp.status not in RETRY_STATUS_CODES:
                 raise
             logger.warning("Retryable YouTube HTTP error %s", error.resp.status)
+            retry += 1
         except RETRY_EXCEPTIONS as error:
             logger.warning("Retryable YouTube transport error: %s", error)
-        if response is None:
             retry += 1
-            if retry > max_retries:
-                raise RuntimeError("YouTube upload exceeded the retry limit.")
-            logger.info("Retrying resumable upload (attempt %d/%d)", retry, max_retries)
-            sleep(random_value() * (2**retry))
+        else:
+            # A chunk completed successfully; a None response just means more
+            # chunks remain, so progress does not consume the retry budget.
+            progress = getattr(status, "progress", lambda: None)() if status else None
+            if progress is not None:
+                logger.info("Uploaded %.1f%% of %r", progress * 100, options["title"])
+            continue
+        if retry > max_retries:
+            raise RuntimeError("YouTube upload exceeded the retry limit.")
+        logger.info("Retrying resumable upload (attempt %d/%d)", retry, max_retries)
+        sleep(random_value() * (2**retry))
     video_id = response.get("id") if isinstance(response, dict) else None
     if not video_id:
         raise RuntimeError(f"YouTube returned an unexpected upload response: {response!r}")
