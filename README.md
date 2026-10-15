@@ -83,6 +83,28 @@ For Reddit anti-bot challenges, configure exactly one of
 `REDDIT_COOKIES_FROM_BROWSER` or `REDDIT_COOKIES_FILE`. Cookie contents are
 never logged. Keep `.env`, `config/`, and cookie files private.
 
+If yt-dlp reports `Account authentication is required`, log into Reddit in
+Firefox on the machine running Reddit2Tube and add this to `.env`:
+
+```dotenv
+REDDIT_COOKIES_FROM_BROWSER=firefox
+```
+
+Use `chrome` instead if that is your logged-in browser. To select a specific
+profile, use `firefox:/absolute/path/to/profile`. Chromium users should use
+`chromium`; for the Ubuntu Snap installation, use
+`chromium:~/snap/chromium/common/chromium/Default`.
+For a server without a local
+browser, export the logged-in Reddit cookies in Mozilla/Netscape format and set
+`REDDIT_COOKIES_FILE=/absolute/path/to/reddit-cookies.txt` instead. Set only one
+cookie option, then rerun your original command. If authentication still fails,
+refresh the browser login or export fresh cookies.
+
+The `REDDIT_USERNAME` and `REDDIT_PASSWORD` settings authenticate PRAW's API
+requests; yt-dlp uses a separate session and needs these browser cookies.
+See the [yt-dlp cookie FAQ](https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp)
+for export instructions.
+
 ### Reddit credentials
 
 Create a script application at <https://www.reddit.com/prefs/apps/> and copy

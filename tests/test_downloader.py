@@ -2,7 +2,12 @@ from pathlib import Path
 
 import pytest
 
-from reddit2tube.downloader import get_download_options, is_reddit_metadata_error, safe_filename
+from reddit2tube.downloader import (
+    download_video,
+    get_download_options,
+    is_reddit_metadata_error,
+    safe_filename,
+)
 from reddit2tube.media import MediaInfo
 
 
@@ -38,6 +43,31 @@ def test_missing_cookie_file_is_rejected(tmp_path):
             download_dir=tmp_path,
             env={"REDDIT_COOKIES_FILE": str(tmp_path / "missing.txt")},
         )
+
+
+def test_explicit_empty_env_does_not_use_process_cookies(monkeypatch):
+    monkeypatch.setenv("REDDIT_COOKIES_FROM_BROWSER", "firefox")
+    monkeypatch.setenv("REDDIT_COOKIES_FILE", "/missing/cookies.txt")
+    options = get_download_options(env={})
+    assert "cookiesfrombrowser" not in options
+    assert "cookiefile" not in options
+
+
+def test_authentication_error_explains_application_cookie_settings(monkeypatch, tmp_path):
+    import yt_dlp
+
+    original = yt_dlp.utils.DownloadError(
+        "ERROR: [Reddit] 1x3xqhv: Account authentication is required."
+    )
+
+    def fail(*args, **kwargs):
+        raise original
+
+    monkeypatch.setattr(yt_dlp.YoutubeDL, "extract_info", fail)
+    with pytest.raises(RuntimeError, match="REDDIT_COOKIES_FROM_BROWSER") as caught:
+        download_video("https://www.reddit.com/test", "test", download_dir=tmp_path, env={})
+    assert "REDDIT_COOKIES_FILE" in str(caught.value)
+    assert caught.value.__cause__ is original
 
 
 def test_metadata_error_detection():

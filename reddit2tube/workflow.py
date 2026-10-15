@@ -60,6 +60,11 @@ def run_workflow(
         reddit, options.subreddit_name, options.reddit_num_submissions, options.time_filter
     )
     youtube = None
+    download_env = {}
+    if settings.reddit_cookies_from_browser:
+        download_env["REDDIT_COOKIES_FROM_BROWSER"] = settings.reddit_cookies_from_browser
+    if settings.reddit_cookies_file:
+        download_env["REDDIT_COOKIES_FILE"] = str(settings.reddit_cookies_file)
     summary = RunSummary()
     for submission in submissions:
         summary.examined += 1
@@ -81,7 +86,7 @@ def run_workflow(
                 submission, title_template, description_template
             )
             local_video = deps.download_video(
-                video_url, video_title, download_dir=settings.download_dir
+                video_url, video_title, download_dir=settings.download_dir, env=download_env
             )
             summary.downloaded += 1
             if options.troubleshooting_upload:
