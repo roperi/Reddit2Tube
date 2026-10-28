@@ -13,7 +13,7 @@ from .database import VideoRepository
 from .downloader import download_video
 from .media import inspect_media
 from .models import RunOptions, RunSummary
-from .reddit import authenticate_reddit, get_top_submissions
+from .reddit import authenticate_reddit, get_reddit_video_url, get_top_submissions
 from .templates import read_template, render_templates
 from .uploader import UploadLimitReached, get_authenticated_service, initialize_upload
 
@@ -34,6 +34,49 @@ def _download_env(settings: Settings) -> dict[str, str]:
     if settings.reddit_cookies_file:
         env["REDDIT_COOKIES_FILE"] = str(settings.reddit_cookies_file)
     return env
+
+
+def _has_reddit_credentials(settings: Settings) -> bool:
+    return all(
+        (
+            settings.reddit_client_id,
+            settings.reddit_client_secret,
+            settings.reddit_user_agent,
+            settings.reddit_username,
+            settings.reddit_password,
+        )
+    )
+
+
+def _resolve_direct_media_url(
+    settings: Settings,
+    source_url: str,
+    deps: WorkflowDependencies,
+    log: logging.Logger,
+) -> str:
+    """Resolve a legacy Reddit permalink to a direct v.redd.it media URL.
+
+    Older pending rows stored the permalink, which yt-dlp turns into a Reddit
+    JSON request that may be blocked by IP. New rows already store the direct
+    URL, so this only runs when re-downloading older records.
+    """
+    if "v.redd.it" in source_url or "reddit.com" not in source_url:
+        return source_url
+    if not _has_reddit_credentials(settings):
+        return source_url
+    try:
+        reddit = deps.authenticate_reddit(
+            settings.reddit_client_id,
+            settings.reddit_client_secret,
+            settings.reddit_user_agent,
+            settings.reddit_username,
+            settings.reddit_password,
+        )
+        direct_url = get_reddit_video_url(reddit.submission(url=source_url))
+    except Exception as error:
+        log.warning("Could not resolve direct Reddit media URL for %s: %s", source_url, error)
+        return source_url
+    return direct_url or source_url
 
 
 def run_workflow(
@@ -86,7 +129,11 @@ def run_workflow(
             continue
         try:
             permalink = str(getattr(submission, "permalink", ""))
-            video_url = "https://www.reddit.com" + permalink if permalink.startswith("/") else url
+            # Prefer the media URL PRAW already returned. It avoids yt-dlp's
+            # Reddit JSON request, which Reddit may block by IP address.
+            video_url = get_reddit_video_url(submission) or (
+                "https://www.reddit.com" + permalink if permalink.startswith("/") else url
+            )
             video_title, video_description = render_templates(
                 submission, title_template, description_template
             )
@@ -161,7 +208,7 @@ def retry_pending_uploads(
     repository: VideoRepository | None = None,
     logger: logging.Logger | None = None,
 ) -> RunSummary:
-    """Re-upload submissions recorded as pending without consulting Reddit."""
+    """Re-upload submissions recorded as pending without a new listing fetch."""
     deps = dependencies or WorkflowDependencies()
     log = logger or logging.getLogger("reddit2tube")
     if options.just_download:
@@ -189,8 +236,9 @@ def retry_pending_uploads(
                 if not item.source_url:
                     raise RuntimeError(f"No local media or source URL to retry {item.title!r}")
                 log.info("Re-downloading %r for retry", item.title)
+                source_url = _resolve_direct_media_url(settings, item.source_url, deps, log)
                 media_path = deps.download_video(
-                    item.source_url,
+                    source_url,
                     item.title,
                     download_dir=settings.download_dir,
                     env=download_env,

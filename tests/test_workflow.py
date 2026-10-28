@@ -77,6 +77,7 @@ def test_download_only_workflow_marks_downloaded_video(settings, submission, tmp
     assert summary.uploaded == 0
     assert summary.failures == 0
     assert "reddit-auth" in calls
+    assert calls[1][0] == "https://v.redd.it/example/HLSPlaylist.m3u8?a=token"
     assert not VideoRepository(settings.database_file).contains("abc123")
 
 
@@ -198,6 +199,7 @@ def test_upload_failure_records_pending(settings, submission):
     assert summary.failures == 1
     rows = VideoRepository(settings.database_file).pending_uploads()
     assert [row.submission_id for row in rows] == ["abc123"]
+    assert rows[0].source_url == "https://v.redd.it/example/HLSPlaylist.m3u8?a=token"
     assert rows[0].media_path.endswith("video.mp4")
     assert rows[0].attempts == 1
     assert "upload failed" in rows[0].last_error
@@ -290,6 +292,47 @@ def test_retry_pending_uploads_redownloads_when_missing(settings):
     )
     assert downloads == [("https://reddit/abc", "Title")]
     assert summary.downloaded == 1
+    assert summary.uploaded == 1
+    assert repository.pending_uploads() == []
+
+
+def test_retry_resolves_legacy_permalink_to_direct_media(settings, submission):
+    repository = VideoRepository(settings.database_file)
+    source_url = "https://www.reddit.com/r/cats/comments/abc123/a_good_cat_video/"
+    repository.record_pending(
+        "abc123",
+        "Title",
+        "Description",
+        source_url,
+        str(settings.download_dir / "gone.mp4"),
+    )
+    downloads = []
+
+    class FakeReddit:
+        def submission(self, *, url):
+            assert url == source_url
+            return submission
+
+    def download(url, title, *, download_dir, env):
+        downloads.append(url)
+        path = Path(download_dir) / "video.mp4"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b"video")
+        return path
+
+    dependencies = WorkflowDependencies(
+        authenticate_reddit=lambda *args: FakeReddit(),
+        download_video=download,
+        get_authenticated_service=lambda settings: object(),
+        initialize_upload=lambda *args: "youtube-id",
+    )
+    summary = retry_pending_uploads(
+        settings,
+        RunOptions("cats"),
+        dependencies=dependencies,
+        logger=logging.getLogger("test"),
+    )
+    assert downloads == ["https://v.redd.it/example/HLSPlaylist.m3u8?a=token"]
     assert summary.uploaded == 1
     assert repository.pending_uploads() == []
 

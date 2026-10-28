@@ -81,7 +81,16 @@ def download_video(
             inspect_media(candidates[0])
             return candidates[0]
     except yt_dlp.utils.DownloadError as error:
-        if "account authentication is required" in str(error).lower():
+        message = str(error).lower()
+        if "unable to access the reddit api" in message:
+            raise RuntimeError(
+                "Reddit blocked yt-dlp's JSON metadata request from this IP address. "
+                "Reddit2Tube downloads v.redd.it media directly using the Reddit API "
+                "metadata, so this usually means the submission had no Reddit-hosted "
+                "media URL; retry later or use a network where reddit.com's JSON API "
+                "is reachable. Reddit cookies do not change this IP-level block."
+            ) from error
+        if "account authentication is required" in message:
             raise RuntimeError(
                 "Reddit requires a logged-in session to download this video. "
                 "Log into Reddit in your browser, then set "
