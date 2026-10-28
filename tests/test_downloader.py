@@ -75,6 +75,23 @@ def test_metadata_error_detection():
     assert not is_reddit_metadata_error(RuntimeError("disk full"))
 
 
+def test_ip_block_error_is_actionable(monkeypatch, tmp_path):
+    import yt_dlp
+
+    original = yt_dlp.utils.DownloadError(
+        "ERROR: [Reddit] abc123: Your IP address is unable to access the Reddit API"
+    )
+
+    def fail(*args, **kwargs):
+        raise original
+
+    monkeypatch.setattr(yt_dlp.YoutubeDL, "extract_info", fail)
+    with pytest.raises(RuntimeError, match="JSON metadata request") as caught:
+        download_video("https://www.reddit.com/test", "test", download_dir=tmp_path, env={})
+    assert "cookies do not change" in str(caught.value)
+    assert caught.value.__cause__ is original
+
+
 def test_media_info_identifies_likely_short():
     info = MediaInfo(Path("video.mp4"), 30, 720, 1280, "h264", "aac", 100)
     assert info.is_likely_short

@@ -44,6 +44,11 @@ being prepared for its next tagged release.
 
 ### Fixed
 
+- Reddit-hosted videos are now downloaded from the direct `v.redd.it` media URL
+  returned by PRAW, avoiding yt-dlp's Reddit JSON metadata request. This fixes
+  the `Your IP address is unable to access the Reddit API` failure on networks
+  where the OAuth API works but `/comments/.../.json` is blocked. Pending rows
+  recorded with a permalink are resolved the same way when retried.
 - Resumable YouTube uploads no longer consume the retry budget on every
   successfully uploaded chunk, which previously failed any upload larger than
   `max_retries * chunk_size` (80 MiB with defaults) and added exponential

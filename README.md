@@ -90,6 +90,12 @@ For Reddit anti-bot challenges, configure exactly one of
 `REDDIT_COOKIES_FROM_BROWSER` or `REDDIT_COOKIES_FILE`. Cookie contents are
 never logged. Keep `.env`, `config/`, and cookie files private.
 
+Reddit-hosted videos are downloaded from the direct `v.redd.it` media URL
+returned by the Reddit API, so `yt-dlp` does not call Reddit's JSON metadata
+endpoint. This avoids the `Your IP address is unable to access the Reddit API`
+error that can occur even when browser cookies are valid. Cookies are only
+necessary when a submission has no direct media URL.
+
 If yt-dlp reports `Account authentication is required`, log into Reddit in
 Firefox on the machine running Reddit2Tube and add this to `.env`:
 
@@ -206,10 +212,12 @@ uv run --locked reddit2tube --retry-failed
 ```
 
 A retry reuses the recorded local file when it still exists, otherwise it
-downloads the video again from the recorded URL. Because the source URL and the
-rendered title and description are stored, retrying does not consult Reddit and
-works even after the submission has left the listing window. Retries use the
-current command-line options for category, privacy status, and made-for-kids.
+downloads the video again from the recorded URL. Pending rows written by older
+versions store a Reddit permalink; those are resolved to a direct `v.redd.it`
+media URL through the Reddit API when credentials are available. Because the
+source URL and the rendered title and description are stored, retrying does not
+need the submission to still be in the listing window. Retries use the current
+command-line options for category, privacy status, and made-for-kids.
 
 Add `--subreddit_name` to retry failures first and then process new submissions
 in the same run:

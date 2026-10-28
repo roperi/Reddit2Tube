@@ -12,6 +12,16 @@ def submission():
         title="A good cat video",
         permalink="/r/cats/comments/abc123/a_good_cat_video/",
         url="https://v.redd.it/example",
+        media={
+            "reddit_video": {
+                "hls_url": "https://v.redd.it/example/HLSPlaylist.m3u8?a=token",
+                "dash_url": "https://v.redd.it/example/DASHPlaylist.mpd?a=token",
+                "fallback_url": "https://v.redd.it/example/CMAF_720.mp4?source=fallback",
+                "has_audio": True,
+            }
+        },
+        secure_media=None,
+        crosspost_parent_list=None,
         author=SimpleNamespace(name="roperi"),
         selftext="",
         score=42,
