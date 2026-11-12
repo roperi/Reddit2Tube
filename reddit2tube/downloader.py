@@ -67,6 +67,37 @@ def _open_ydl(yt_dlp, options: dict):
         return yt_dlp.YoutubeDL({k: v for k, v in options.items() if k != "cookiesfrombrowser"})
 
 
+COOKIE_ERROR_MARKERS = ("cookie", "secretstorage", "keyring", "keychain", "kwallet")
+
+
+def is_cookie_load_error(error: Exception) -> bool:
+    message = str(error).lower()
+    return any(marker in message for marker in COOKIE_ERROR_MARKERS) and (
+        "account authentication is required" not in message
+    )
+
+
+def _fetch(yt_dlp, options: dict, video_url: str, video_title: str, directory: Path) -> Path:
+    with _open_ydl(yt_dlp, options) as ydl:
+        info = ydl.extract_info(video_url, download=True)
+        prepared = Path(ydl.prepare_filename(info))
+        if prepared.is_file():
+            inspect_media(prepared)
+            return prepared
+        candidates = sorted(directory.glob(f"{safe_filename(video_title)}.*"))
+        candidates = [
+            candidate
+            for candidate in candidates
+            if candidate.is_file() and candidate.suffix not in {".part", ".ytdl"}
+        ]
+        if len(candidates) != 1:
+            raise FileNotFoundError(
+                f"yt-dlp did not produce an unambiguous media file for {video_title!r}"
+            )
+        inspect_media(candidates[0])
+        return candidates[0]
+
+
 def download_video(
     video_url: str,
     video_title: str,
@@ -81,24 +112,22 @@ def download_video(
     options = get_download_options(download_dir=directory, env=env)
     options["outtmpl"] = str(directory / f"{safe_filename(video_title)}.%(ext)s")
     try:
-        with _open_ydl(yt_dlp, options) as ydl:
-            info = ydl.extract_info(video_url, download=True)
-            prepared = Path(ydl.prepare_filename(info))
-            if prepared.is_file():
-                inspect_media(prepared)
-                return prepared
-            candidates = sorted(directory.glob(f"{safe_filename(video_title)}.*"))
-            candidates = [
-                candidate
-                for candidate in candidates
-                if candidate.is_file() and candidate.suffix not in {".part", ".ytdl"}
-            ]
-            if len(candidates) != 1:
-                raise FileNotFoundError(
-                    f"yt-dlp did not produce an unambiguous media file for {video_title!r}"
-                )
-            inspect_media(candidates[0])
-            return candidates[0]
+        try:
+            return _fetch(yt_dlp, options, video_url, video_title, directory)
+        except yt_dlp.utils.DownloadError as error:
+            has_cookies = "cookiesfrombrowser" in options or "cookiefile" in options
+            if not (has_cookies and is_cookie_load_error(error)):
+                raise
+            logger.warning(
+                "Reddit cookies could not be used (%s); retrying without cookies. "
+                "For Chromium-based browsers on Linux, install the optional extra: "
+                "pip install 'reddit2tube[cookies]'. Or fix or unset the cookie "
+                "setting in .env.",
+                error,
+            )
+            for key in ("cookiesfrombrowser", "cookiefile"):
+                options.pop(key, None)
+            return _fetch(yt_dlp, options, video_url, video_title, directory)
     except yt_dlp.utils.DownloadError as error:
         message = str(error).lower()
         if "unable to access the reddit api" in message:

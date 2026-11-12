@@ -106,8 +106,19 @@ REDDIT_COOKIES_FROM_BROWSER=firefox
 Use another browser name (`chrome`, `chromium`, `brave`, `edge`, ...) if that is
 your logged-in browser; see yt-dlp's `--cookies-from-browser` documentation for
 the full list. To select a specific profile, use `browser:/absolute/path/to/profile`.
-Cookies are optional: if the configured browser or profile cannot be read,
-Reddit2Tube logs a warning and continues without cookies.
+Cookies are optional: if the configured browser or profile cannot be read or
+decrypted, Reddit2Tube logs a warning and continues without cookies.
+
+On Linux, Chromium-based browsers (Chromium, Chrome, Brave, Edge) encrypt cookies
+with the desktop keyring, and yt-dlp needs the `secretstorage` package to read
+them. Install the optional extra:
+
+```bash
+uv sync --extra cookies          # uv
+pip install "reddit2tube[cookies]"   # pip
+```
+
+Firefox and cookie-file exports do not need it.
 For a server without a local
 browser, export the logged-in Reddit cookies in Mozilla/Netscape format and set
 `REDDIT_COOKIES_FILE=/absolute/path/to/reddit-cookies.txt` instead. Set only one

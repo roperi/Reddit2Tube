@@ -20,6 +20,10 @@ dependencies = [
     "yt-dlp>=2026.06.09",
 ]
 
+[project.optional-dependencies]
+# Needed to decrypt Chromium-based browser cookies on Linux (keyring access).
+cookies = ["secretstorage>=3.3"]
+
 [dependency-groups]
 dev = ["pre-commit>=3.7", "pytest>=8.0", "pytest-cov>=5.0", "ruff>=0.6"]
 

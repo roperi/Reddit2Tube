@@ -24,9 +24,13 @@ being prepared for its next tagged release.
   and the complete quality gate.
 - Pre-commit and pre-push hooks managed through the pre-commit framework.
 - Contributor, security, and example-template documentation.
+- Optional `cookies` extra (`secretstorage`) for decrypting Chromium-based
+  browser cookies on Linux.
 
 ### Changed
 
+- Browser cookies are now optional in practice: if they cannot be read or
+  decrypted, a warning is logged and the download is retried without them.
 - Switched dependency management, local development commands, hooks, and CI
   to uv with a committed lockfile.
 - Removed the legacy requirements files; uv is now the supported installation
