@@ -103,10 +103,11 @@ Firefox on the machine running Reddit2Tube and add this to `.env`:
 REDDIT_COOKIES_FROM_BROWSER=firefox
 ```
 
-Use `chrome` instead if that is your logged-in browser. To select a specific
-profile, use `firefox:/absolute/path/to/profile`. Chromium users should use
-`chromium`; for the Ubuntu Snap installation, use
-`chromium:~/snap/chromium/common/chromium/Default`.
+Use another browser name (`chrome`, `chromium`, `brave`, `edge`, ...) if that is
+your logged-in browser; see yt-dlp's `--cookies-from-browser` documentation for
+the full list. To select a specific profile, use `browser:/absolute/path/to/profile`.
+Cookies are optional: if the configured browser or profile cannot be read,
+Reddit2Tube logs a warning and continues without cookies.
 For a server without a local
 browser, export the logged-in Reddit cookies in Mozilla/Netscape format and set
 `REDDIT_COOKIES_FILE=/absolute/path/to/reddit-cookies.txt` instead. Set only one
