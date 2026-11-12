@@ -114,3 +114,54 @@ def test_unusable_browser_profile_falls_back_to_no_cookies(caplog):
     _open_ydl(FakeYt(), {"cookiesfrombrowser": ("chromium", "/nope")})
     assert "cookiesfrombrowser" not in calls[-1]
     assert "continuing without cookies" in caplog.text
+
+
+def test_cookie_decrypt_error_retries_without_cookies(monkeypatch, tmp_path, caplog):
+    import yt_dlp
+
+    from reddit2tube import downloader
+
+    seen = []
+    media = tmp_path / "test.mp4"
+    media.write_bytes(b"x")
+
+    class FakeYDL:
+        def __init__(self, options):
+            self.options = options
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def extract_info(self, url, download=True):
+            seen.append(dict(self.options))
+            if "cookiesfrombrowser" in self.options:
+                raise yt_dlp.utils.DownloadError(
+                    "ERROR: secretstorage not available as the `secretstorage` module is missing"
+                )
+            return {}
+
+        def prepare_filename(self, info):
+            return str(media)
+
+    monkeypatch.setattr(yt_dlp, "YoutubeDL", FakeYDL)
+    monkeypatch.setattr(downloader, "inspect_media", lambda path: None)
+    result = download_video(
+        "https://v.redd.it/x",
+        "test",
+        download_dir=tmp_path,
+        env={"REDDIT_COOKIES_FROM_BROWSER": "chromium"},
+    )
+    assert result == media
+    assert "cookiesfrombrowser" in seen[0] and "cookiesfrombrowser" not in seen[1]
+    assert "retrying without cookies" in caplog.text
+
+
+def test_is_cookie_load_error():
+    from reddit2tube.downloader import is_cookie_load_error
+
+    assert is_cookie_load_error(RuntimeError("secretstorage not available"))
+    assert not is_cookie_load_error(RuntimeError("Account authentication is required"))
+    assert not is_cookie_load_error(RuntimeError("HTTP 404"))
