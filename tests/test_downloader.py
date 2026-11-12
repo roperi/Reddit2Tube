@@ -97,3 +97,20 @@ def test_media_info_identifies_likely_short():
     assert info.is_likely_short
     landscape = MediaInfo(Path("video.mp4"), 30, 1280, 720, "h264", "aac", 100)
     assert not landscape.is_likely_short
+
+
+def test_unusable_browser_profile_falls_back_to_no_cookies(caplog):
+    calls = []
+
+    class FakeYt:
+        def YoutubeDL(self, options):
+            calls.append(options)
+            if "cookiesfrombrowser" in options:
+                raise FileNotFoundError("could not find chromium cookies database")
+            return object()
+
+    from reddit2tube.downloader import _open_ydl
+
+    _open_ydl(FakeYt(), {"cookiesfrombrowser": ("chromium", "/nope")})
+    assert "cookiesfrombrowser" not in calls[-1]
+    assert "continuing without cookies" in caplog.text

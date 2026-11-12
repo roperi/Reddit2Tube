@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import re
 from collections.abc import Mapping
 from pathlib import Path
 
 from .media import inspect_media
+
+logger = logging.getLogger(__name__)
 
 
 def safe_filename(value: str, max_length: int = 120) -> str:
@@ -48,6 +51,22 @@ def is_reddit_metadata_error(error: Exception) -> bool:
     )
 
 
+def _open_ydl(yt_dlp, options: dict):
+    """Create a YoutubeDL, falling back to no cookies if the browser profile is unusable."""
+    try:
+        return yt_dlp.YoutubeDL(options)
+    except Exception as error:
+        if "cookiesfrombrowser" not in options:
+            raise
+        logger.warning(
+            "Could not load Reddit cookies from browser %r (%s); continuing without cookies. "
+            "Fix or unset REDDIT_COOKIES_FROM_BROWSER in .env.",
+            ":".join(options["cookiesfrombrowser"]),
+            error,
+        )
+        return yt_dlp.YoutubeDL({k: v for k, v in options.items() if k != "cookiesfrombrowser"})
+
+
 def download_video(
     video_url: str,
     video_title: str,
@@ -62,7 +81,7 @@ def download_video(
     options = get_download_options(download_dir=directory, env=env)
     options["outtmpl"] = str(directory / f"{safe_filename(video_title)}.%(ext)s")
     try:
-        with yt_dlp.YoutubeDL(options) as ydl:
+        with _open_ydl(yt_dlp, options) as ydl:
             info = ydl.extract_info(video_url, download=True)
             prepared = Path(ydl.prepare_filename(info))
             if prepared.is_file():
